@@ -1,0 +1,61 @@
+# Frontend CI — LucidSpec
+#
+# What this does: on every push to main and every merge request, this runs
+# three independent checks — lint, test, build — and reports pass/fail for
+# each separately, so it's obvious at a glance which one (if any) is broken.
+# It does NOT block or gate anything:
+#   - Vercel's auto-deploy on push happens independently of this pipeline's
+#     result; changing that is out of scope here.
+#   - This pipeline cannot stop a deploy even if every job fails.
+# The goal is purely visibility: today these problems are invisible because
+# nothing runs them automatically. This surfaces the current state instead.
+#
+# Known baseline as of writing: the "test" job is expected to show 2
+# pre-existing failing tests out of 120, and the "lint" job is expected to
+# show existing real ESLint errors (next.config.mjs disables lint-on-build,
+# so this is the only place lint errors are visible at all). That's accurate
+# reporting of the current state, not a broken CI config.
+
+image: node:22-alpine
+
+stages:
+  - lint
+  - test
+  - build
+
+# Cache node_modules between jobs/pipelines, keyed on the lockfile, so
+# `npm ci` doesn't redownload everything from scratch every run.
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - .npm/
+    - node_modules/
+
+variables:
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+  # Dummy, non-secret placeholders. These are NEXT_PUBLIC_* values (public by
+  # design) and only need to be non-empty strings so the Supabase client
+  # constructor doesn't throw during `next build`'s static prerendering.
+  # They are not valid/functional credentials.
+  NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "placeholder-anon-key"
+
+before_script:
+  - npm ci
+
+Lint code:
+  stage: lint
+  script:
+    - npm run lint
+
+Run frontend tests:
+  stage: test
+  script:
+    - npm run test
+
+Build frontend:
+  stage: build
+  script:
+    - npm run build

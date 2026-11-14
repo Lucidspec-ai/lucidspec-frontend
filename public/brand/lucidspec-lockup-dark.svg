@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 100">
+  <g transform="translate(2,18) scale(0.64)">
+    <polygon points="41,23 75,38 41,53 7,38" fill="#93C5FD"/>
+    <polygon points="50,34 84,49 50,64 16,49" fill="#3B82F6" stroke="#0F1226" stroke-width="3" stroke-linejoin="round"/>
+    <polygon points="59,45 93,60 59,75 25,60" fill="#5B21B6" stroke="#0F1226" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+  <text x="80" y="66" font-family="Manrope, Inter, system-ui, sans-serif" font-weight="800" font-size="40" letter-spacing="-0.8">
+    <tspan fill="#F1F3FC">Lucid</tspan><tspan fill="#60A5FA">Spec</tspan>
+  </text>
+</svg>
