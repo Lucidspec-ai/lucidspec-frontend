@@ -24,6 +24,7 @@ import Footer from '@/components/Footer';
 import AccountLayout from '@/app/account/layout';
 import FounderStoryPage from '@/app/founder/page';
 import IntegrationsPage from '@/app/integrations/page';
+import SecurityPage from '@/app/security/page';
 
 describe('configuration page navigation', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -88,6 +89,7 @@ describe('configuration page navigation', () => {
   it.each([
     { pathname: '/founder', Page: FounderStoryPage, activeLink: 'About', target: '#founder-content' },
     { pathname: '/integrations', Page: IntegrationsPage, activeLink: 'Integrations', target: '#integrations-content' },
+    { pathname: '/security', Page: SecurityPage, activeLink: 'Security', target: '#security-content' },
   ])('reuses homepage navigation and a single footer on $pathname', async ({ pathname, Page, activeLink, target }) => {
     mocks.pathname = pathname;
     render(<><Navbar /><Page /><Footer /></>);
