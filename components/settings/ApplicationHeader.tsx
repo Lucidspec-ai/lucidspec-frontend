@@ -7,12 +7,34 @@ export function ApplicationHeader({
   userEmail,
   onSignOut,
   onSignIn,
+  readiness = false,
 }: {
   signedIn: boolean;
   userEmail?: string;
   onSignOut: () => void | Promise<void>;
   onSignIn: () => void;
+  readiness?: boolean;
 }) {
+  if (readiness) return (
+    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white">
+      <a href="#configuration-content" className="sr-only rounded-lg bg-blue-600 p-3 text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-40">Skip to settings</a>
+      <div className="flex h-[72px] items-center justify-between">
+        <Link href="/generator" aria-label="LucidSpec — create tickets" className="flex h-full shrink-0 items-center gap-2.5 px-4 text-2xl font-bold tracking-tight text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 sm:px-7 xl:w-72 xl:border-r xl:border-slate-200/80 xl:px-10">
+          <Image src="/brand/lucidspec-icon.svg" alt="" width={30} height={30} />
+          <span>Lucid<span className="text-blue-600">Spec</span></span>
+        </Link>
+        <nav aria-label="Application" className="flex min-w-0 items-center gap-2 px-3 sm:gap-4 sm:px-7 xl:px-10">
+          {signedIn ? <>
+            <Link href="/account" className="flex min-h-11 min-w-0 items-center gap-3 rounded-full border border-slate-200 py-1 pl-1 pr-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600" aria-label="Your account settings">
+              <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-700">{userEmail?.slice(0, 1).toUpperCase() || 'L'}</span>
+              <span className="hidden min-w-0 sm:block"><span className="block max-w-52 truncate text-xs font-semibold text-slate-900">{userEmail || 'Your account'}</span><span className="block text-xs text-slate-500">Personal account</span></span>
+            </Link>
+            <button type="button" onClick={onSignOut} className="min-h-11 rounded-lg px-2 text-xs font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">Sign out</button>
+          </> : <button type="button" onClick={onSignIn} className="min-h-11 rounded-lg px-3 text-sm text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">Sign in</button>}
+        </nav>
+      </div>
+    </header>
+  );
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
       <a href="#configuration-content" className="sr-only rounded-lg bg-blue-600 p-3 text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-40">Skip to settings</a>

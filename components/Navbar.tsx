@@ -68,7 +68,7 @@ export default function Navbar() {
   }
 
   if (isConfigurationPath(pathname)) {
-    return <ApplicationHeader signedIn={Boolean(session)} userEmail={session?.user?.email} onSignOut={handleSignOut} onSignIn={handleSignIn} />;
+    return <ApplicationHeader readiness={pathname === '/account/checklist'} signedIn={Boolean(session)} userEmail={session?.user?.email} onSignOut={handleSignOut} onSignIn={handleSignIn} />;
   }
 
   const navLinks = [

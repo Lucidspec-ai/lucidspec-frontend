@@ -26,7 +26,7 @@ import AccountLayout from '@/app/account/layout';
 describe('configuration page navigation', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it.each(['/account', '/account/checklist', '/account/ticket-style', '/account/integrations', '/onboarding/readiness-standards', '/onboarding/connect-tracker'])(
+  it.each(['/account', '/account/ticket-style', '/account/integrations', '/onboarding/readiness-standards', '/onboarding/connect-tracker'])(
     'shows application navigation and hides marketing content on %s', async (pathname) => {
       mocks.pathname = pathname;
       render(<><Navbar /><Footer /></>);
@@ -49,6 +49,19 @@ describe('configuration page navigation', () => {
       await screen.findByRole('button', { name: 'Sign out' });
     }
   );
+
+  it('uses the reference sidebar and personal account header only on the readiness route', async () => {
+    mocks.pathname = '/account/checklist';
+    render(<><Navbar /><AccountLayout><h1>Readiness Standards</h1></AccountLayout><Footer /></>);
+    expect(await screen.findByRole('link', { name: 'Your account settings' })).toHaveAttribute('href', '/account');
+    expect(await screen.findByText('Personal account')).toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: 'Settings' });
+    expect(within(nav).getByRole('link', { name: 'Readiness Standards' })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav).getByRole('link', { name: 'Ticket Examples' })).toHaveAttribute('href', '/account/ticket-style');
+    expect(screen.getByText('Application menu')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Features' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
+  });
 
   it('marks the active settings page and links directly to existing custom rules', () => {
     mocks.pathname = '/account/ticket-style';

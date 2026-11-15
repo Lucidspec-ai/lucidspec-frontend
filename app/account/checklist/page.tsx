@@ -7,10 +7,12 @@ import { safeGetSession } from '@/lib/safeSession';
 import { apiFetch, apiGet } from '@/lib/api';
 import { toast } from '@/lib/toast';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { SettingsPageHeader } from '@/components/ui/SettingsPageHeader';
+import Link from 'next/link';
 import Spinner from '@/components/Spinner';
-import { FactStateControl, ReadinessSummary } from '@/components/readiness/ReadinessControls';
-import { ReadinessChecklist } from '@/components/readiness/ReadinessChecklist';
+import { FactStateControl, ReadinessSummary, SeverityGuide } from '@/components/readiness/ReadinessControls';
+import { ReadinessTabs, READINESS_TABS } from '@/components/readiness/ReadinessTabs';
+import { ReadinessIcon } from '@/components/readiness/ReadinessIcon';
+import { ReadinessChecklist, READINESS_SECTIONS } from '@/components/readiness/ReadinessChecklist';
 import { SettingsFeedback, type SettingsFeedbackValue } from '@/components/ui/SettingsFeedback';
 import type {
   CustomRule,
@@ -80,6 +82,24 @@ function toCustomRuleCategory(value: string): CustomRuleCategory {
 
 export default function ChecklistSettingsPage() {
   const router = useRouter();
+  const [activeCategory, setActiveCategory] = useState('work-context');
+  useEffect(() => {
+    const syncCategory = () => {
+      const id = window.location.hash.slice(1);
+      setActiveCategory(READINESS_TABS.some((tab) => tab.id === id) ? id : 'work-context');
+    };
+    syncCategory();
+    window.addEventListener('hashchange', syncCategory);
+    window.addEventListener('popstate', syncCategory);
+    return () => {
+      window.removeEventListener('hashchange', syncCategory);
+      window.removeEventListener('popstate', syncCategory);
+    };
+  }, []);
+  const selectCategory = (id: string) => {
+    setActiveCategory(id);
+    window.history.replaceState(window.history.state, '', `#${id}`);
+  };
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [settings, setSettings] = useState<RubricSettings | null>(null);
@@ -375,13 +395,11 @@ export default function ChecklistSettingsPage() {
 
   return (
     <section aria-label="Readiness settings">
-    <div className="space-y-8">
-      <header className="flex flex-col items-start justify-between gap-5 md:flex-row">
-        <SettingsPageHeader
-          title="Readiness Standards"
-          description="Define the details a ticket needs before it is ready for execution. Choose what is required, what needs review, and what to leave out."
-        />
-        <a href="#custom-rules" className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50">Go to Custom Rules ↓</a>
+    <div className="space-y-5 sm:space-y-6">
+      <header>
+        <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-2 text-sm text-slate-500"><Link href="/account" className="hover:text-blue-700">Settings</Link><span aria-hidden="true">/</span><span aria-current="page">Readiness Standards</span></nav>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Readiness Standards</h1>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">Define the information your tickets need before work is ready for execution.</p>
       </header>
 
       {loadError ? (
@@ -399,48 +417,22 @@ export default function ChecklistSettingsPage() {
         </div>
       ) : null}
 
-      {!loading && settings ? (
-        <div className="space-y-6">
+      {!loading ? <>
+        {settings ? <div className="space-y-5">
+          <SeverityGuide dashboard />
           <ReadinessSummary facts={settings.facts} values={factState} />
-          <section id="standard-checks" aria-labelledby="standard-checks-title" aria-busy={saving} className="scroll-mt-28">
-            <div className="mb-4">
-              <h2 id="standard-checks-title" className="text-base font-semibold text-slate-950">Standard checks</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-500">Review each category and choose a severity. Changes apply after you save.</p>
-            </div>
-            {settings.facts.length > 0 ? (
-              <ReadinessChecklist facts={settings.facts} values={factState} onChange={setStateFor} disabled={saving} layout="workspace" />
-            ) : (
-              <EmptyState message="No standard checks are available for your account right now." />
-            )}
-          </section>
-
-          <div className="z-20 flex flex-col items-stretch justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.25)] sm:sticky sm:bottom-4 sm:flex-row sm:items-center sm:px-5">
-            <div className="min-w-0">
-              {hasChanges ? <p className="mb-1 flex items-center gap-2 text-xs font-semibold text-amber-800"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-amber-500" />Unsaved changes</p> : null}
-              <p
-                role={saveFeedback?.kind === 'error' ? 'alert' : 'status'}
-                className={`text-sm leading-6 ${
-                  saveFeedback?.kind === 'error' ? 'text-red-800' :
-                  saveFeedback?.kind === 'success' ? 'text-emerald-800' : 'text-slate-600'
-                }`}
-              >
-                {saving ? 'Saving your readiness standards…' : saveFeedback?.message || (hasChanges ? 'You have unsaved changes.' : 'Changes apply after you save.')}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onSave}
-              disabled={saving || !hasChanges}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 disabled:shadow-none"
-            >
-              {saving ? 'Saving…' : 'Save changes'}
-            </button>
+        </div> : null}
+        <ReadinessTabs value={activeCategory} onChange={selectCategory} />
+        {READINESS_SECTIONS.map((section) => (
+          <div key={section.id} id={`panel-${section.id}`} role="tabpanel" aria-labelledby={`tab-${section.id}`} aria-busy={saving} tabIndex={0} hidden={activeCategory !== section.id} className="min-w-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600">
+            {settings ? <ReadinessChecklist facts={settings.facts} values={factState} onChange={setStateFor} disabled={saving} headingLevel={2} activeSection={section.id} /> : <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">Standard checks are unavailable until your settings can be loaded.</p>}
           </div>
-        </div>
-      ) : null}
+        ))}
+      </> : null}
 
       {!loading ? (
-        <section id="custom-rules" aria-labelledby="custom-rules-title" className="scroll-mt-28 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+        <div id="panel-custom-rules" role="tabpanel" aria-labelledby="tab-custom-rules" tabIndex={0} hidden={activeCategory !== 'custom-rules'} className="min-w-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600">
+        <section id="custom-rules" aria-labelledby="custom-rules-title" className="scroll-mt-28 rounded-2xl border border-blue-100 bg-white p-5 shadow-[0_2px_6px_rgba(30,64,175,0.04)] sm:p-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
             <div>
               <div className="flex flex-wrap items-center gap-3">
@@ -448,7 +440,7 @@ export default function ChecklistSettingsPage() {
                 {!rulesLoadError ? <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">{rules.length} {rules.length === 1 ? 'rule' : 'rules'}</span> : null}
               </div>
               <p className="mt-1 text-sm text-slate-600">
-                Add checks for details specific to your tickets. Custom rules are saved separately from the standard checks above.
+                Add checks for details specific to your tickets. Custom rules are saved separately from standard checks.
               </p>
             </div>
             {!showRuleForm ? (
@@ -636,6 +628,31 @@ export default function ChecklistSettingsPage() {
             </fieldset>
           ) : null}
         </section>
+        </div>
+      ) : null}
+
+      {!loading && settings ? (
+        <div role="region" aria-label="Save standard checks" className="sticky bottom-0 z-20 flex flex-col gap-4 border-t border-slate-200 bg-[#fbfcff]/95 py-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className={`mt-0.5 ${hasChanges ? 'text-amber-600' : saveFeedback?.kind === 'success' ? 'text-emerald-600' : 'text-slate-400'}`}><ReadinessIcon name={saveFeedback?.kind === 'success' ? 'check' : 'info'} /></span>
+            <div className="min-w-0">
+              {hasChanges ? <p className="mb-1 text-xs font-semibold text-amber-800">Unsaved changes</p> : null}
+              <p role={saveFeedback?.kind === 'error' ? 'alert' : 'status'} className={`max-w-xl text-sm leading-6 ${saveFeedback?.kind === 'error' ? 'text-red-800' : saveFeedback?.kind === 'success' ? 'text-emerald-800' : 'text-slate-600'}`}>
+                {saving ? 'Saving your readiness standards…' : saveFeedback?.message || (hasChanges ? 'You have unsaved changes.' : 'No unsaved changes.')}
+              </p>
+              {activeCategory === 'custom-rules' ? <p className="mt-1 text-xs text-slate-500">This saves standard checks. Custom rules are saved separately.</p> : null}
+            </div>
+          </div>
+          <div className="flex shrink-0 gap-3">
+            <button type="button" disabled={saving || !hasChanges} onClick={() => {
+              setFactState(Object.fromEntries(settings.facts.map((fact) => [fact.key, settings.fact_settings[fact.key] ?? fact.severity])));
+              setSaveFeedback(null);
+            }} className="min-h-11 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-6">Discard changes</button>
+            <button type="button" onClick={onSave} disabled={saving || !hasChanges} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-7">
+              {saving ? 'Saving…' : 'Save standards'}
+            </button>
+          </div>
+        </div>
       ) : null}
     </div>
     </section>

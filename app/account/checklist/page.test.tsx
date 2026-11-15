@@ -73,6 +73,10 @@ function ruleCategoryButtons() {
   };
 }
 
+async function openCategory(name: string) {
+  await userEvent.setup().click(await screen.findByRole('tab', { name }));
+}
+
 function stateButtonsFor(label: string) {
   const row = screen.getByText(label).closest('div') as HTMLElement;
   return {
@@ -89,6 +93,7 @@ function summaryCounts() {
 
 describe('ChecklistSettingsPage', () => {
   beforeEach(() => {
+    window.history.replaceState(null, '', '/account/checklist');
     pushMock.mockReset();
     apiGetMock.mockReset();
     apiFetchMock.mockReset();
@@ -117,7 +122,9 @@ describe('ChecklistSettingsPage', () => {
     render(<ChecklistSettingsPage />);
 
     expect(await screen.findByText('Target')).toBeInTheDocument();
+    await openCategory('Validation & Recovery');
     expect(stateButtonsFor('Rollback').blocking).toHaveAttribute('aria-pressed', 'true');
+    await openCategory('Additional Context');
     expect(stateButtonsFor('Client / industry tag').advisory).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -125,6 +132,7 @@ describe('ChecklistSettingsPage', () => {
     mockSettings({ ...SETTINGS, fact_settings: { rollback: 'off' } });
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Validation & Recovery');
     await screen.findByText('Rollback');
 
     expect(stateButtonsFor('Rollback').off).toHaveAttribute('aria-pressed', 'true');
@@ -139,17 +147,17 @@ describe('ChecklistSettingsPage', () => {
     expect(screen.queryByRole('region', { name: 'Selected standard check severities' })).not.toBeInTheDocument();
     await act(async () => resolveSettings({ ...SETTINGS, fact_settings: { rollback: 'off' } }));
     expect(summaryCounts()).toEqual(['1', '1', '1']);
-    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save standards' })).toBeDisabled();
 
     await user.click(stateButtonsFor('Target').advisory);
     expect(summaryCounts()).toEqual(['0', '2', '1']);
     expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Save standards' })).toBeEnabled();
 
     await user.click(stateButtonsFor('Target').blocking);
     expect(summaryCounts()).toEqual(['1', '1', '1']);
     expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save standards' })).toBeDisabled();
     expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
@@ -159,20 +167,22 @@ describe('ChecklistSettingsPage', () => {
     apiFetchMock.mockResolvedValue(saved);
     const user = userEvent.setup();
     const page = render(<ChecklistSettingsPage />);
+    await openCategory('Validation & Recovery');
     await screen.findByText('Rollback');
     await user.click(stateButtonsFor('Rollback').off);
-    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await user.click(screen.getByRole('button', { name: 'Save standards' }));
     await screen.findByText('Readiness standards saved.');
     expect(summaryCounts()).toEqual(['1', '1', '1']);
     page.unmount();
 
     mockSettings(saved);
     render(<ChecklistSettingsPage />);
+    await openCategory('Validation & Recovery');
     await screen.findByText('Rollback');
     expect(stateButtonsFor('Rollback').off).toHaveAttribute('aria-pressed', 'true');
     expect(summaryCounts()).toEqual(['1', '1', '1']);
     expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save standards' })).toBeDisabled();
     expect(apiFetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -181,7 +191,7 @@ describe('ChecklistSettingsPage', () => {
     render(<ChecklistSettingsPage />);
     expect(await screen.findByRole('alert')).toHaveTextContent('Readiness standards could not be loaded.');
     expect(screen.queryByRole('region', { name: 'Selected standard check severities' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Save changes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save standards' })).not.toBeInTheDocument();
     expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
@@ -191,10 +201,11 @@ describe('ChecklistSettingsPage', () => {
     const user = userEvent.setup();
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Validation & Recovery');
     await screen.findByText('Rollback');
 
     await user.click(stateButtonsFor('Rollback').off);
-    await user.click(screen.getByRole('button', { name: /Save changes/i }));
+    await user.click(screen.getByRole('button', { name: /Save standards/i }));
 
     await waitFor(() =>
       expect(apiFetchMock).toHaveBeenCalledWith(
@@ -213,10 +224,11 @@ describe('ChecklistSettingsPage', () => {
     const user = userEvent.setup();
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Additional Context');
     await screen.findByText('Client / industry tag');
 
     await user.click(stateButtonsFor('Client / industry tag').blocking);
-    await user.click(screen.getByRole('button', { name: /Save changes/i }));
+    await user.click(screen.getByRole('button', { name: /Save standards/i }));
 
     await waitFor(() =>
       expect(apiFetchMock).toHaveBeenCalledWith(
@@ -236,10 +248,11 @@ describe('ChecklistSettingsPage', () => {
     const user = userEvent.setup();
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Validation & Recovery');
     await screen.findByText('Rollback');
     await user.click(stateButtonsFor('Rollback').off);
     expect(screen.getByRole('status')).toHaveTextContent('You have unsaved changes.');
-    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await user.click(screen.getByRole('button', { name: 'Save standards' }));
 
     expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
     expect(stateButtonsFor('Rollback').blocking).toBeDisabled();
@@ -262,15 +275,16 @@ describe('ChecklistSettingsPage', () => {
     const user = userEvent.setup();
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Validation & Recovery');
     await screen.findByText('Rollback');
     await user.click(stateButtonsFor('Rollback').off);
-    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await user.click(screen.getByRole('button', { name: 'Save standards' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Changes were not saved. Service unavailable');
     expect(stateButtonsFor('Rollback').off).toHaveAttribute('aria-pressed', 'true');
     expect(toastMock.success).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await user.click(screen.getByRole('button', { name: 'Save standards' }));
     expect(await screen.findByText('Readiness standards saved.')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(apiFetchMock).toHaveBeenCalledTimes(2);
@@ -280,6 +294,7 @@ describe('ChecklistSettingsPage', () => {
     mockSettings(SETTINGS, [RULE]);
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Custom Rules');
 
     expect(await screen.findByText('Concurrent load')).toBeInTheDocument();
     expect(screen.getByText('Tech Scope')).toBeInTheDocument();
@@ -292,6 +307,7 @@ describe('ChecklistSettingsPage', () => {
     ]);
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Custom Rules');
 
     await screen.findByText('Concurrent load');
     expect(screen.getByText('Bug')).toBeInTheDocument();
@@ -302,6 +318,7 @@ describe('ChecklistSettingsPage', () => {
     mockSettings(SETTINGS, [{ ...RULE, source: 'manual' }]);
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Custom Rules');
 
     await screen.findByText('Concurrent load');
     expect(screen.queryByText('Suggested from example')).not.toBeInTheDocument();
@@ -311,6 +328,7 @@ describe('ChecklistSettingsPage', () => {
     mockSettings(SETTINGS, []);
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Custom Rules');
 
     expect(await screen.findByText('No custom rules yet.')).toBeInTheDocument();
   });
@@ -321,6 +339,7 @@ describe('ChecklistSettingsPage', () => {
     const user = userEvent.setup();
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Custom Rules');
     await screen.findByText('No custom rules yet.');
 
     await user.click(screen.getByRole('button', { name: '+ Add Custom Rule' }));
@@ -354,6 +373,7 @@ describe('ChecklistSettingsPage', () => {
     const user = userEvent.setup();
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Custom Rules');
     await screen.findByText('Concurrent load');
 
     await user.click(screen.getByRole('button', { name: 'Edit' }));
@@ -379,6 +399,7 @@ describe('ChecklistSettingsPage', () => {
     const user = userEvent.setup();
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Custom Rules');
     await screen.findByText('Concurrent load');
 
     await user.click(screen.getByRole('button', { name: 'Pause' }));
@@ -397,6 +418,7 @@ describe('ChecklistSettingsPage', () => {
     const user = userEvent.setup();
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Custom Rules');
     await screen.findByText('Concurrent load');
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
@@ -416,6 +438,7 @@ describe('ChecklistSettingsPage', () => {
     const user = userEvent.setup();
 
     render(<ChecklistSettingsPage />);
+    await openCategory('Custom Rules');
     await screen.findByText('No custom rules yet.');
 
     await user.click(screen.getByRole('button', { name: '+ Add Custom Rule' }));
@@ -432,12 +455,106 @@ describe('ChecklistSettingsPage', () => {
     expect(toastMock.success).not.toHaveBeenCalled();
   });
 
-  it('offers a direct custom-rules jump and does not claim a failed rule load is empty', async () => {
+  it('offers a custom-rules tab and does not claim a failed rule load is empty', async () => {
     apiGetMock.mockImplementation((url: string) => url.includes('custom-rules') ? Promise.reject(new Error('Service unavailable')) : Promise.resolve(SETTINGS));
     render(<ChecklistSettingsPage />);
-    await screen.findByText('Target');
-    expect(screen.getByRole('link', { name: 'Go to Custom Rules ↓' })).toHaveAttribute('href', '#custom-rules');
+    await openCategory('Custom Rules');
+    expect(screen.getByRole('tab', { name: 'Custom Rules' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('alert')).toHaveTextContent('Service unavailable');
     expect(screen.queryByText('No custom rules yet.')).not.toBeInTheDocument();
+  });
+
+  it('shows one category at a time and retains selections when switching categories', async () => {
+    mockSettings(SETTINGS);
+    const user = userEvent.setup();
+    render(<ChecklistSettingsPage />);
+    await screen.findByRole('tab', { name: 'Work Context' });
+    expect(screen.getAllByRole('tab')).toHaveLength(5);
+    expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+    expect(screen.getByRole('tabpanel')).toHaveAccessibleName('Work Context');
+    expect(screen.queryByRole('group', { name: 'Rollback severity' })).not.toBeInTheDocument();
+    await user.click(stateButtonsFor('Target').off);
+    await openCategory('Validation & Recovery');
+    await user.click(stateButtonsFor('Rollback').advisory);
+    await openCategory('Additional Context');
+    expect(screen.getByRole('group', { name: 'Client / industry tag severity' })).toBeInTheDocument();
+    await openCategory('Work Context');
+    expect(stateButtonsFor('Target').off).toHaveAttribute('aria-pressed', 'true');
+    expect(summaryCounts()).toEqual(['0', '2', '1']);
+    expect(apiFetchMock).not.toHaveBeenCalled();
+  });
+
+  it('supports arrow, Home, and End keys with focus and tab-panel relationships', async () => {
+    mockSettings(SETTINGS);
+    const user = userEvent.setup();
+    render(<ChecklistSettingsPage />);
+    const first = await screen.findByRole('tab', { name: 'Work Context' });
+    first.focus();
+    await user.keyboard('{ArrowRight}');
+    const planning = screen.getByRole('tab', { name: 'Execution Planning' });
+    expect(planning).toHaveFocus();
+    expect(planning).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', planning.getAttribute('aria-controls'));
+    expect(screen.getByText('No checks in this category are available for your account.')).toBeInTheDocument();
+    await user.keyboard('{End}');
+    expect(screen.getByRole('tab', { name: 'Custom Rules' })).toHaveFocus();
+    await user.keyboard('{ArrowRight}');
+    expect(first).toHaveFocus();
+    await user.keyboard('{ArrowLeft}{Home}');
+    expect(first).toHaveFocus();
+    expect(screen.getAllByRole('tab').filter(tab => tab.tabIndex === 0)).toEqual([first]);
+  });
+
+  it('honors existing custom-rules deep links and subsequent hash navigation', async () => {
+    window.history.replaceState(null, '', '/account/checklist#custom-rules');
+    mockSettings(SETTINGS);
+    render(<ChecklistSettingsPage />);
+    expect(await screen.findByRole('tabpanel', { name: 'Custom Rules' })).toBeInTheDocument();
+    act(() => {
+      window.history.replaceState(null, '', '#additional-context');
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    expect(screen.getByRole('tabpanel', { name: 'Additional Context' })).toBeInTheDocument();
+    expect(apiFetchMock).not.toHaveBeenCalled();
+  });
+
+  it('discards standard edits back to the last confirmed settings without saving or clearing a custom draft', async () => {
+    mockSettings({ ...SETTINGS, fact_settings: { target: 'off' } });
+    const user = userEvent.setup();
+    render(<ChecklistSettingsPage />);
+    await screen.findByText('Target');
+    await user.click(stateButtonsFor('Target').blocking);
+    await openCategory('Custom Rules');
+    await user.click(screen.getByRole('button', { name: '+ Add Custom Rule' }));
+    await user.type(screen.getByLabelText('Rule name'), 'My draft');
+    await user.click(screen.getByRole('button', { name: 'Discard changes' }));
+    expect(screen.getByLabelText('Rule name')).toHaveValue('My draft');
+    await openCategory('Work Context');
+    expect(stateButtonsFor('Target').off).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Save standards' })).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('No unsaved changes.');
+    await openCategory('Custom Rules');
+    expect(screen.getByLabelText('Rule name')).toHaveValue('My draft');
+    expect(apiFetchMock).not.toHaveBeenCalled();
+    expect(toastMock.success).not.toHaveBeenCalled();
+  });
+
+  it('keeps the custom-rule preview operation and supported severity values', async () => {
+    mockSettings(SETTINGS);
+    apiFetchMock.mockResolvedValue({ present: true, evaluated: true, value: '100 users' });
+    const user = userEvent.setup();
+    render(<ChecklistSettingsPage />);
+    await openCategory('Custom Rules');
+    await user.click(screen.getByRole('button', { name: '+ Add Custom Rule' }));
+    await user.type(screen.getByLabelText('Rule name'), RULE.name);
+    await user.type(screen.getByLabelText('What should this rule check?'), RULE.prompt_text);
+    await user.type(screen.getByLabelText('Example ticket to test'), '100 users');
+    expect(within(screen.getByRole('group', { name: 'Severity' })).queryByRole('button', { name: 'Off' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Test rule' }));
+    await screen.findByText('Matched: "100 users"');
+    expect(apiFetchMock).toHaveBeenCalledWith('/api/account/custom-rules/preview', expect.objectContaining({
+      method: 'POST', body: { name: RULE.name, category: 'Tech Scope', prompt_text: RULE.prompt_text, severity: 'advisory', sample_text: '100 users' },
+    }));
+    expect(toastMock.success).not.toHaveBeenCalled();
   });
 });

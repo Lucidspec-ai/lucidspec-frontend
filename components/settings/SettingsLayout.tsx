@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ReadinessShell } from './ReadinessShell';
 
 const LINKS = [
   { href: '/account', label: 'Account' },
@@ -14,6 +15,7 @@ const LINKS = [
 
 export function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  if (pathname === '/account/checklist') return <ReadinessShell>{children}</ReadinessShell>;
   return (
     <div className="min-h-[calc(100dvh-72px)] bg-slate-50 text-slate-900 [&_a]:focus-visible:outline [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-2 [&_a]:focus-visible:outline-blue-600 [&_button]:focus-visible:outline [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2 [&_button]:focus-visible:outline-blue-600 [&_input]:focus-visible:outline [&_input]:focus-visible:outline-2 [&_input]:focus-visible:outline-offset-2 [&_input]:focus-visible:outline-blue-600 [&_textarea]:focus-visible:outline [&_textarea]:focus-visible:outline-2 [&_textarea]:focus-visible:outline-offset-2 [&_textarea]:focus-visible:outline-blue-600">
       <div className="mx-auto grid max-w-[1600px] gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[208px_minmax(0,1fr)] lg:gap-8 lg:py-10">
