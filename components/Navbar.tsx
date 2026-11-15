@@ -9,6 +9,7 @@ import AdminLink from './AdminLink';
 import { toast } from '@/lib/toast';
 import { isConfigurationPath } from '@/lib/appNavigation';
 import { ApplicationHeader } from '@/components/settings/ApplicationHeader';
+import { MarketingHeader } from '@/components/marketing/MarketingHeader';
 
 export default function Navbar() {
   const router = useRouter();
@@ -69,6 +70,10 @@ export default function Navbar() {
 
   if (isConfigurationPath(pathname)) {
     return <ApplicationHeader readiness={pathname === '/account/checklist'} signedIn={Boolean(session)} userEmail={session?.user?.email} onSignOut={handleSignOut} onSignIn={handleSignIn} />;
+  }
+
+  if (isHome) {
+    return <MarketingHeader signedIn={Boolean(session)} onSignIn={handleSignIn} onSignOut={handleSignOut} adminLink={<AdminLink key={uid} />} />;
   }
 
   const navLinks = [
