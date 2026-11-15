@@ -20,8 +20,10 @@ export function SetupShell({
 }) {
   return (
     <section
+      id="configuration-content"
+      tabIndex={-1}
       aria-labelledby="setup-title"
-      className="bg-[linear-gradient(180deg,#eef4ff_0%,#f8fafc_100%)] px-4 py-8 sm:px-6 sm:py-12 [&_a]:focus-visible:outline [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-blue-600 [&_button]:focus-visible:outline [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-4 [&_button]:focus-visible:outline-blue-600 [&_input]:focus-visible:outline [&_input]:focus-visible:outline-2 [&_input]:focus-visible:outline-offset-2 [&_input]:focus-visible:outline-blue-600"
+      className="min-h-[calc(100dvh-72px)] scroll-mt-24 bg-slate-50 px-4 py-8 sm:px-6 sm:py-12 [&_a]:focus-visible:outline [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-blue-600 [&_button]:focus-visible:outline [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-4 [&_button]:focus-visible:outline-blue-600 [&_input]:focus-visible:outline [&_input]:focus-visible:outline-2 [&_input]:focus-visible:outline-offset-2 [&_input]:focus-visible:outline-blue-600"
     >
       <div className="mx-auto grid max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.25)] lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="bg-slate-950 p-6 text-white sm:p-8 lg:flex lg:flex-col lg:p-9">

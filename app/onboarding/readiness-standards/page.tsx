@@ -9,7 +9,8 @@ import { toast } from '@/lib/toast';
 import type { RubricFactState, RubricSettings } from '@/lib/apiTypes';
 import { SetupShell } from '@/components/ui/SetupShell';
 import Spinner from '@/components/Spinner';
-import { FactStateControl, SeverityGuide } from '@/components/readiness/ReadinessControls';
+import { SeverityGuide } from '@/components/readiness/ReadinessControls';
+import { ReadinessChecklist } from '@/components/readiness/ReadinessChecklist';
 
 // Only ever reached via the signup success redirect (see app/signup/page.tsx),
 // one hop before app/onboarding/connect-tracker/page.tsx. Skippable, not a
@@ -114,7 +115,7 @@ export default function ReadinessStandardsOnboardingPage() {
     <SetupShell
       step={1}
       title="Your readiness standards"
-      description="Review what LucidSpec checks before a ticket is ready. Adjust the severity of each check now, or revisit these choices in account settings."
+      description="Choose which details matter for ticket readiness. You can change these settings later."
     >
         {loadError ? (
           <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800">
@@ -134,21 +135,8 @@ export default function ReadinessStandardsOnboardingPage() {
         {!loading && settings ? (
           <div aria-busy={saving}>
             <SeverityGuide />
-            <div className="mt-6 divide-y divide-slate-200">
-              {settings.facts.map((fact) => (
-                <div key={fact.key} className="flex flex-col items-start justify-between gap-3 py-5 sm:flex-row sm:gap-5">
-                  <span className="min-w-0 flex-1">
-                    <span className="text-sm font-semibold text-slate-900">{fact.label}</span>
-                    <span className="mt-1 block text-sm leading-6 text-slate-600">{fact.question}</span>
-                  </span>
-                  <FactStateControl
-                    label={fact.label}
-                    disabled={saving}
-                    value={factState[fact.key] ?? fact.severity}
-                    onChange={(value) => setStateFor(fact.key, value)}
-                  />
-                </div>
-              ))}
+            <div className="mt-6">
+              <ReadinessChecklist facts={settings.facts} values={factState} onChange={setStateFor} disabled={saving} headingLevel={2} />
             </div>
             <p className="mt-3 text-xs leading-5 text-slate-500">
               Continue saves your choices. Skip keeps your existing settings.

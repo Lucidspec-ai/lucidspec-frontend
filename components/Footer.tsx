@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import React from 'react';
 import { usePathname } from 'next/navigation';
+import { isConfigurationPath } from '@/lib/appNavigation';
 
 type FooterProps = {
   shortSha?: string | null;
@@ -11,7 +13,7 @@ type FooterProps = {
 export default function Footer({ shortSha, showStamp = false }: FooterProps) {
   const pathname = usePathname();
 
-  if (pathname === '/' || pathname === '/generator' || pathname === '/usage-cost') {
+  if (pathname === '/' || pathname === '/generator' || pathname === '/usage-cost' || isConfigurationPath(pathname)) {
     return null;
   }
 

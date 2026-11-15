@@ -266,7 +266,7 @@ describe('ChecklistSettingsPage', () => {
     await user.click(screen.getByRole('button', { name: '+ Add Custom Rule' }));
     await user.type(screen.getByLabelText('Rule name'), RULE.name);
     await user.click(ruleCategoryButtons().techScope);
-    await user.type(screen.getByLabelText('AI grounding prompt'), RULE.prompt_text);
+    await user.type(screen.getByLabelText('What should this rule check?'), RULE.prompt_text);
     await user.click(ruleSeverityButtons().blocking);
     await user.click(screen.getByRole('button', { name: 'Add Custom Rule' }));
 
@@ -361,11 +361,23 @@ describe('ChecklistSettingsPage', () => {
     await user.click(screen.getByRole('button', { name: '+ Add Custom Rule' }));
     await user.type(screen.getByLabelText('Rule name'), RULE.name);
     await user.click(ruleCategoryButtons().techScope);
-    await user.type(screen.getByLabelText('AI grounding prompt'), RULE.prompt_text);
+    await user.type(screen.getByLabelText('What should this rule check?'), RULE.prompt_text);
     await user.click(screen.getByRole('button', { name: 'Add Custom Rule' }));
 
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith('unsafe_input'));
     // The form must stay open with what the user typed, not silently vanish.
     expect(screen.getByLabelText('Rule name')).toHaveValue(RULE.name);
+    expect(screen.getByRole('alert')).toHaveTextContent('Your rule was not saved. unsafe_input');
+    expect(screen.getByLabelText('What should this rule check?')).toHaveValue(RULE.prompt_text);
+    expect(toastMock.success).not.toHaveBeenCalled();
+  });
+
+  it('offers a direct custom-rules jump and does not claim a failed rule load is empty', async () => {
+    apiGetMock.mockImplementation((url: string) => url.includes('custom-rules') ? Promise.reject(new Error('Service unavailable')) : Promise.resolve(SETTINGS));
+    render(<ChecklistSettingsPage />);
+    await screen.findByText('Target');
+    expect(screen.getByRole('link', { name: 'Go to Custom Rules ↓' })).toHaveAttribute('href', '#custom-rules');
+    expect(screen.getByRole('alert')).toHaveTextContent('Service unavailable');
+    expect(screen.queryByText('No custom rules yet.')).not.toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -67,6 +67,8 @@ describe('TicketStylePage', () => {
     render(<TicketStylePage />);
 
     expect(await screen.findByText('No examples saved yet.')).toBeInTheDocument();
+    expect(screen.getByText(/structure and writing style/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '+ Add ticket type' })).toHaveLength(1);
   });
 
   it('renders saved examples with their extracted style profile', async () => {
@@ -101,6 +103,8 @@ describe('TicketStylePage', () => {
       )
     );
     expect(await screen.findByText(/2 standards suggested/)).toBeInTheDocument();
+    expect(screen.getByText('Example saved.')).toHaveAttribute('role', 'status');
+    expect(screen.getByRole('link', { name: /review them in Readiness Standards/ })).toHaveAttribute('href', '/account/checklist#custom-rules');
   });
 
   it('editing an example locks the ticket type field and sends a PUT', async () => {
@@ -164,5 +168,35 @@ describe('TicketStylePage', () => {
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith('unsafe_input'));
     // The form must stay open with what the user typed, not silently vanish.
     expect(screen.getByPlaceholderText('Bug')).toHaveValue('Bug');
+    expect(screen.getByRole('alert')).toHaveTextContent('Your example was not saved. unsafe_input');
+    expect(screen.getByLabelText('Example ticket')).toHaveValue('Title: Login fails');
+    expect(toastMock.success).not.toHaveBeenCalled();
+  });
+
+  it('does not present a failed load as an empty account', async () => {
+    apiGetMock.mockRejectedValue(new Error('Service unavailable'));
+    render(<TicketStylePage />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Your examples could not be loaded.');
+    expect(screen.queryByText('No examples saved yet.')).not.toBeInTheDocument();
+  });
+
+  it('keeps form values locked and waits for API confirmation before showing success', async () => {
+    apiGetMock.mockResolvedValue({ examples: [] });
+    let resolveSave!: (value: unknown) => void;
+    apiFetchMock.mockReturnValue(new Promise((resolve) => { resolveSave = resolve; }));
+    const user = userEvent.setup();
+    render(<TicketStylePage />);
+    await screen.findByText('No examples saved yet.');
+    await user.click(screen.getByRole('button', { name: '+ Add ticket type' }));
+    await user.type(screen.getByLabelText('Ticket type'), 'Bug');
+    await user.type(screen.getByLabelText('Example ticket'), 'Title: Login fails');
+    await user.click(screen.getByRole('button', { name: 'Add example' }));
+    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    expect(screen.getByLabelText('Example ticket')).toBeDisabled();
+    expect(screen.queryByText('Example saved.')).not.toBeInTheDocument();
+    expect(toastMock.success).not.toHaveBeenCalled();
+    await act(async () => resolveSave({ ...BUG_EXAMPLE, suggested_rule_ids: [] }));
+    expect(screen.getByRole('status')).toHaveTextContent('Example saved.');
+    expect(screen.getByRole('heading', { name: 'Bug' })).toBeInTheDocument();
   });
 });

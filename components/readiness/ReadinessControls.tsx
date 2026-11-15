@@ -18,15 +18,19 @@ export function FactStateControl({
   onChange,
   label,
   disabled = false,
+  allowOff = true,
+  groupLabel,
 }: {
   value: RubricFactState;
   onChange: (next: RubricFactState) => void;
   label: string;
   disabled?: boolean;
+  allowOff?: boolean;
+  groupLabel?: string;
 }) {
   return (
-    <div role="group" aria-label={`${label} severity`} className="inline-flex w-full shrink-0 gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 sm:w-auto">
-      {STATE_OPTIONS.map((option) => {
+    <div role="group" aria-label={groupLabel || `${label} severity`} className="inline-flex w-full shrink-0 gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 sm:w-auto">
+      {STATE_OPTIONS.filter((option) => allowOff || option.value !== 'off').map((option) => {
         const active = value === option.value;
         return (
           <button

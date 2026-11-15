@@ -10,6 +10,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { SettingsPageHeader } from '@/components/ui/SettingsPageHeader';
 import Spinner from '@/components/Spinner';
 import { FactStateControl, SeverityGuide } from '@/components/readiness/ReadinessControls';
+import { ReadinessChecklist } from '@/components/readiness/ReadinessChecklist';
+import { SettingsFeedback, type SettingsFeedbackValue } from '@/components/ui/SettingsFeedback';
 import type {
   CustomRule,
   CustomRuleCategory,
@@ -25,19 +27,22 @@ function LabeledInput({
   onChange,
   placeholder,
   textarea,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   textarea?: boolean;
+  disabled?: boolean;
 }) {
   const className = 'mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900';
   return (
     <label className="block">
-      <span className="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">{label}</span>
+      <span className="text-sm font-semibold text-slate-800">{label}</span>
       {textarea ? (
         <textarea
+          disabled={disabled}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
@@ -47,6 +52,7 @@ function LabeledInput({
       ) : (
         <input
           type="text"
+          disabled={disabled}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
@@ -56,11 +62,6 @@ function LabeledInput({
     </label>
   );
 }
-
-const CUSTOM_RULE_SEVERITIES: { value: CustomRuleSeverity; label: string }[] = [
-  { value: 'advisory', label: 'Advisory' },
-  { value: 'blocking', label: 'Blocking' },
-];
 
 const CUSTOM_RULE_CATEGORIES: { value: CustomRuleCategory; label: string }[] = [
   { value: 'Tech Scope', label: 'Tech Scope' },
@@ -91,6 +92,8 @@ export default function ChecklistSettingsPage() {
 
   const [rules, setRules] = useState<CustomRule[]>([]);
   const [rulesLoadError, setRulesLoadError] = useState('');
+  const [ruleFeedback, setRuleFeedback] = useState<SettingsFeedbackValue | null>(null);
+  const [updatingRuleId, setUpdatingRuleId] = useState<string | null>(null);
   const [showRuleForm, setShowRuleForm] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [ruleName, setRuleName] = useState('');
@@ -158,6 +161,7 @@ export default function ChecklistSettingsPage() {
   };
 
   const resetRuleForm = () => {
+    setRuleFeedback(null);
     setEditingRuleId(null);
     setRuleName('');
     setRuleCategory('Tech Scope');
@@ -174,6 +178,7 @@ export default function ChecklistSettingsPage() {
   };
 
   const onStartEditRule = (rule: CustomRule) => {
+    setRuleFeedback(null);
     setEditingRuleId(rule.id);
     setRuleName(rule.name);
     setRuleCategory(toCustomRuleCategory(rule.category));
@@ -202,11 +207,13 @@ export default function ChecklistSettingsPage() {
   const onTestRule = async () => {
     if (testingRule) return;
     if (!ruleName.trim() || !rulePrompt.trim() || !sampleText.trim()) {
+      setRuleFeedback({ kind: 'error', message: 'Fill in the rule fields and some sample text first' });
       toast.error('Fill in the rule fields and some sample text first');
       return;
     }
     const token = await withRuleToken();
     if (!token) return;
+    setRuleFeedback(null);
     setTestingRule(true);
     setRuleTestResult(null);
     try {
@@ -225,7 +232,9 @@ export default function ChecklistSettingsPage() {
       setRuleTestResult(result);
     } catch (e: any) {
       setRuleTestResult({ present: false, evaluated: false });
-      toast.error(String(e?.message || 'Could not test this rule'));
+      const message = String(e?.message || 'Could not test this rule');
+      setRuleFeedback({ kind: 'error', message });
+      toast.error(message);
     } finally {
       setTestingRule(false);
     }
@@ -234,11 +243,13 @@ export default function ChecklistSettingsPage() {
   const onSaveRule = async () => {
     if (savingRule) return;
     if (!ruleName.trim() || !rulePrompt.trim()) {
+      setRuleFeedback({ kind: 'error', message: 'Enter a rule name and what it should check.' });
       toast.error('Name and prompt are required');
       return;
     }
     const token = await withRuleToken();
     if (!token) return;
+    setRuleFeedback(null);
     setSavingRule(true);
     try {
       const body = {
@@ -267,16 +278,22 @@ export default function ChecklistSettingsPage() {
         toast.success('Custom rule added');
       }
       resetRuleForm();
+      setRuleFeedback({ kind: 'success', message: editingRuleId ? 'Custom rule updated.' : 'Custom rule added.' });
     } catch (e: any) {
-      toast.error(String(e?.message || 'Could not save this custom rule'));
+      const message = String(e?.message || 'Could not save this custom rule');
+      setRuleFeedback({ kind: 'error', message: `Your rule was not saved. ${message} Your entries are still here.` });
+      toast.error(message);
     } finally {
       setSavingRule(false);
     }
   };
 
   const onToggleRuleActive = async (rule: CustomRule) => {
+    if (updatingRuleId) return;
     const token = await withRuleToken();
     if (!token) return;
+    setUpdatingRuleId(rule.id);
+    setRuleFeedback(null);
     try {
       const updated = await apiFetch<CustomRule>(`/api/account/custom-rules/${rule.id}`, {
         method: 'PUT',
@@ -285,8 +302,13 @@ export default function ChecklistSettingsPage() {
         timeoutMs: 15000,
       });
       setRules((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+      setRuleFeedback({ kind: 'success', message: updated.active ? 'Custom rule resumed.' : 'Custom rule paused.' });
     } catch (e: any) {
-      toast.error(String(e?.message || 'Could not update this custom rule'));
+      const message = String(e?.message || 'Could not update this custom rule');
+      setRuleFeedback({ kind: 'error', message });
+      toast.error(message);
+    } finally {
+      setUpdatingRuleId(null);
     }
   };
 
@@ -294,6 +316,7 @@ export default function ChecklistSettingsPage() {
     if (deletingRuleId) return;
     const token = await withRuleToken();
     if (!token) return;
+    setRuleFeedback(null);
     setDeletingRuleId(rule.id);
     try {
       await apiFetch(`/api/account/custom-rules/${rule.id}`, {
@@ -303,8 +326,11 @@ export default function ChecklistSettingsPage() {
       });
       setRules((prev) => prev.filter((r) => r.id !== rule.id));
       toast.success('Custom rule deleted');
+      setRuleFeedback({ kind: 'success', message: 'Custom rule deleted.' });
     } catch (e: any) {
-      toast.error(String(e?.message || 'Could not delete this custom rule'));
+      const message = String(e?.message || 'Could not delete this custom rule');
+      setRuleFeedback({ kind: 'error', message });
+      toast.error(message);
     } finally {
       setDeletingRuleId(null);
     }
@@ -348,13 +374,11 @@ export default function ChecklistSettingsPage() {
   };
 
   return (
-    <section aria-label="Readiness settings" className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#ffffff_75%)] [&_a]:focus-visible:outline [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-blue-600 [&_button]:focus-visible:outline [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2 [&_button]:focus-visible:outline-blue-600 [&_input]:focus-visible:outline [&_input]:focus-visible:outline-2 [&_input]:focus-visible:outline-offset-2 [&_input]:focus-visible:outline-blue-600 [&_textarea]:focus-visible:outline [&_textarea]:focus-visible:outline-2 [&_textarea]:focus-visible:outline-offset-2 [&_textarea]:focus-visible:outline-blue-600">
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
-      <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-blue-700">Account settings</p>
+    <section aria-label="Readiness settings">
+    <div className="mx-auto max-w-4xl">
       <SettingsPageHeader
         title="Readiness Standards"
-        description="Choose how each check contributes to ticket readiness. These account-level settings apply wherever you create a ticket in LucidSpec."
-        backHref="/account"
+        description="Choose which details are required, recommended, or excluded when LucidSpec checks your tickets."
       />
 
       {loadError ? (
@@ -374,22 +398,16 @@ export default function ChecklistSettingsPage() {
 
       {!loading && settings ? (
         <div aria-busy={saving} className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-950">Standard checks</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">Set a severity for each check. Your choices apply to your account.</p>
+            </div>
+            <a href="#custom-rules" className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-blue-700 hover:bg-blue-50">Go to Custom Rules ↓</a>
+          </div>
           <SeverityGuide />
-          <div className="mt-4 divide-y divide-slate-200">
-            {settings.facts.map((fact) => (
-              <div key={fact.key} className="flex flex-col items-start justify-between gap-3 py-5 sm:flex-row sm:gap-5">
-                <span className="min-w-0 flex-1">
-                  <span className="text-sm font-semibold text-slate-900">{fact.label}</span>
-                  <span className="mt-1 block text-sm leading-6 text-slate-600">{fact.question}</span>
-                </span>
-                <FactStateControl
-                  label={fact.label}
-                  disabled={saving}
-                  value={factState[fact.key] ?? fact.severity}
-                  onChange={(next) => setStateFor(fact.key, next)}
-                />
-              </div>
-            ))}
+          <div className="mt-6">
+            <ReadinessChecklist facts={settings.facts} values={factState} onChange={setStateFor} disabled={saving} />
           </div>
 
           <div className="mt-4 flex flex-col items-start gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -416,13 +434,12 @@ export default function ChecklistSettingsPage() {
       ) : null}
 
       {!loading ? (
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section id="custom-rules" aria-labelledby="custom-rules-title" className="mt-8 scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
             <div>
-              <h2 className="text-lg font-extrabold tracking-tight text-slate-950">Custom rules</h2>
+              <h2 id="custom-rules-title" className="text-lg font-semibold tracking-tight text-slate-950">Custom rules</h2>
               <p className="mt-1 text-sm text-slate-600">
-                Add your own checks beyond the standards above. Each rule is evaluated with AI, separately from the
-                standard checks, so it never affects them.
+                Add checks for requirements specific to your tickets. Set their severity, try them on an example, and pause them whenever needed.
               </p>
             </div>
             {!showRuleForm ? (
@@ -441,6 +458,8 @@ export default function ChecklistSettingsPage() {
               {rulesLoadError}
             </p>
           ) : null}
+
+          <SettingsFeedback feedback={ruleFeedback} />
 
           {rules.length > 0 ? (
             <div className="mt-4 divide-y divide-slate-100">
@@ -479,9 +498,10 @@ export default function ChecklistSettingsPage() {
                     <button
                       type="button"
                       onClick={() => onToggleRuleActive(rule)}
+                      disabled={Boolean(updatingRuleId) || deletingRuleId === rule.id}
                       className="min-h-11 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                     >
-                      {rule.active ? 'Pause' : 'Resume'}
+                      {updatingRuleId === rule.id ? 'Updating…' : rule.active ? 'Pause' : 'Resume'}
                     </button>
                     <button
                       type="button"
@@ -502,16 +522,20 @@ export default function ChecklistSettingsPage() {
                 </div>
               ))}
             </div>
-          ) : !showRuleForm ? (
-            <EmptyState className="mt-4" message="No custom rules yet." />
+          ) : !showRuleForm && !rulesLoadError ? (
+            <EmptyState className="mt-5" message={<>
+              <p className="font-semibold text-slate-900">No custom rules yet.</p>
+              <p className="mx-auto mt-2 max-w-md leading-6">Add a check for a detail your tickets should include, such as peak traffic or a security review. Your standard checks work without custom rules.</p>
+            </>} />
           ) : null}
 
           {showRuleForm ? (
-            <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <fieldset disabled={savingRule || testingRule} aria-busy={savingRule || testingRule} className="mt-5 min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+              <legend className="px-1 text-sm font-semibold text-slate-900">{editingRuleId ? 'Edit custom rule' : 'New custom rule'}</legend>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <LabeledInput label="Rule name" value={ruleName} onChange={setRuleName} placeholder="Concurrent user load" />
                 <fieldset className="min-w-0">
-                  <legend className="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Category</legend>
+                  <legend className="text-sm font-semibold text-slate-800">Category</legend>
                   <div className="mt-1.5 grid grid-cols-3 overflow-hidden rounded-lg border border-slate-200">
                     {CUSTOM_RULE_CATEGORIES.map((option, index) => (
                       <button
@@ -532,38 +556,21 @@ export default function ChecklistSettingsPage() {
                 </fieldset>
                 <div className="sm:col-span-2">
                   <LabeledInput
-                    label="AI grounding prompt"
+                    label="What should this rule check?"
                     value={rulePrompt}
                     onChange={setRulePrompt}
                     placeholder="Does the ticket mention concurrent user load or peak traffic handling?"
                     textarea
                   />
                 </div>
-                <fieldset className="min-w-0">
-                  <legend className="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Severity</legend>
-                  <div className="mt-1.5 inline-flex overflow-hidden rounded-lg border border-slate-200">
-                    {CUSTOM_RULE_SEVERITIES.map((option, index) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setRuleSeverity(option.value)}
-                        aria-pressed={ruleSeverity === option.value}
-                        className={`min-h-11 px-3 py-1.5 text-xs font-bold transition ${index > 0 ? 'border-l border-slate-200' : ''} ${
-                          ruleSeverity === option.value
-                            ? option.value === 'blocking'
-                              ? 'bg-red-700 text-white'
-                              : 'bg-amber-700 text-white'
-                            : 'bg-white text-slate-500 hover:bg-slate-50'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-slate-800">Severity</p>
+                  <FactStateControl label="Custom rule" groupLabel="Severity" allowOff={false} value={ruleSeverity} disabled={savingRule || testingRule} onChange={(value) => { if (value !== 'off') setRuleSeverity(value); }} />
+                  <p className="mt-2 text-xs leading-5 text-slate-500">Advisory flags a missing detail. Blocking requires it for readiness.</p>
+                </div>
                 <div className="sm:col-span-2">
                   <LabeledInput
-                    label="Sample ticket text (for testing)"
+                    label="Example ticket to test"
                     value={sampleText}
                     onChange={setSampleText}
                     placeholder="Paste example ticket text here to see how this rule would evaluate it before saving."
@@ -617,9 +624,9 @@ export default function ChecklistSettingsPage() {
                   Cancel
                 </button>
               </div>
-            </div>
+            </fieldset>
           ) : null}
-        </div>
+        </section>
       ) : null}
     </div>
     </section>

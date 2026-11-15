@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { safeGetSession } from '@/lib/safeSession';
 import AdminLink from './AdminLink';
 import { toast } from '@/lib/toast';
+import { isConfigurationPath } from '@/lib/appNavigation';
+import { ApplicationHeader } from '@/components/settings/ApplicationHeader';
 
 export default function Navbar() {
   const router = useRouter();
@@ -63,6 +65,10 @@ export default function Navbar() {
 
   if (pathname === '/generator' || pathname === '/usage-cost') {
     return null;
+  }
+
+  if (isConfigurationPath(pathname)) {
+    return <ApplicationHeader signedIn={Boolean(session)} userEmail={session?.user?.email} onSignOut={handleSignOut} onSignIn={handleSignIn} />;
   }
 
   const navLinks = [
