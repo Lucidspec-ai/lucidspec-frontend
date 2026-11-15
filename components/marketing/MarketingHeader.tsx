@@ -12,11 +12,13 @@ const LINKS = [
   { label: 'About', href: '/founder' },
 ];
 
-export function MarketingHeader({ signedIn, onSignIn, onSignOut, adminLink }: {
+export function MarketingHeader({ signedIn, onSignIn, onSignOut, adminLink, contentId = 'homepage-content', currentPath = '/' }: {
   signedIn: boolean;
   onSignIn: () => void;
   onSignOut: () => void | Promise<void>;
   adminLink?: React.ReactNode;
+  contentId?: string;
+  currentPath?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -32,7 +34,7 @@ export function MarketingHeader({ signedIn, onSignIn, onSignOut, adminLink }: {
       menuButton.current?.focus();
     }
   }}>
-    <a href="#homepage-content" className="sr-only rounded-lg bg-blue-600 p-3 text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50">Skip to content</a>
+    <a href={`#${contentId}`} className="sr-only rounded-lg bg-blue-600 p-3 text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50">Skip to content</a>
     <div className="mx-auto flex min-h-16 max-w-[1408px] items-center justify-between gap-5 px-5 sm:px-8">
       <Link href="/" aria-label="LucidSpec home" className="inline-flex shrink-0 items-center gap-2 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl"><Image src="/brand/lucidspec-icon.svg" alt="" width={28} height={28} /><span>Lucid<span className="text-blue-600">Spec</span></span></Link>
       <nav aria-label="Main navigation" className="hidden items-center gap-5 text-sm font-semibold text-slate-800 xl:flex 2xl:gap-7">
@@ -45,7 +47,7 @@ export function MarketingHeader({ signedIn, onSignIn, onSignOut, adminLink }: {
             {adminLink}
           </div>
         </details>
-        {LINKS.map(link => <Link key={link.href} href={link.href} className="inline-flex min-h-11 items-center rounded-lg hover:text-blue-700">{link.label}</Link>)}
+        {LINKS.map(link => <Link key={link.href} href={link.href} aria-current={currentPath === link.href ? 'page' : undefined} className={`inline-flex min-h-11 items-center rounded-lg hover:text-blue-700 ${currentPath === link.href ? 'text-blue-700' : ''}`}>{link.label}</Link>)}
       </nav>
       <div className="hidden shrink-0 items-center gap-3 sm:flex">
         {signedIn ? <><Link href="/generator" className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50">Work Requests</Link><button type="button" onClick={() => { closeMenu(); onSignOut(); }} className="min-h-11 rounded-lg px-2 text-sm font-medium text-slate-600 hover:text-blue-700">Sign out</button></> : <button type="button" onClick={() => { closeMenu(); onSignIn(); }} className="min-h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-800 hover:bg-slate-50">Sign in</button>}
@@ -56,7 +58,7 @@ export function MarketingHeader({ signedIn, onSignIn, onSignOut, adminLink }: {
     <nav id="marketing-mobile-menu" aria-label="Mobile navigation" hidden={!menuOpen} className="border-t border-slate-100 bg-white px-5 pb-5 pt-3 xl:hidden">
       <div className="grid gap-1 text-sm font-semibold text-slate-700 sm:grid-cols-2" onClick={closeMenu}>
         <Link href="/features" className="rounded-lg px-3 py-3 hover:bg-blue-50">Product overview</Link>
-        {LINKS.map(link => <Link key={link.href} href={link.href} className="rounded-lg px-3 py-3 hover:bg-blue-50">{link.label}</Link>)}
+        {LINKS.map(link => <Link key={link.href} href={link.href} aria-current={currentPath === link.href ? 'page' : undefined} className={`rounded-lg px-3 py-3 hover:bg-blue-50 ${currentPath === link.href ? 'text-blue-700' : ''}`}>{link.label}</Link>)}
       </div>
       <div className="mt-3 flex flex-wrap gap-3 border-t border-slate-100 pt-4 sm:hidden">
         {signedIn ? <><Link href="/generator" onClick={closeMenu} className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-800">Work Requests</Link><button type="button" onClick={() => { closeMenu(); onSignOut(); }} className="min-h-11 rounded-lg px-3 text-sm font-semibold text-slate-700">Sign out</button></> : <button type="button" onClick={() => { closeMenu(); onSignIn(); }} className="min-h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-800">Sign in</button>}

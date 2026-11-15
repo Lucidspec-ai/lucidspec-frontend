@@ -13,7 +13,7 @@ type FooterProps = {
 export default function Footer({ shortSha, showStamp = false }: FooterProps) {
   const pathname = usePathname();
 
-  if (pathname === '/' || pathname === '/generator' || pathname === '/usage-cost' || isConfigurationPath(pathname)) {
+  if (pathname === '/' || pathname === '/founder' || pathname === '/generator' || pathname === '/usage-cost' || isConfigurationPath(pathname)) {
     return null;
   }
 

@@ -22,6 +22,7 @@ vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), info: vi.fn() } }));
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AccountLayout from '@/app/account/layout';
+import FounderStoryPage from '@/app/founder/page';
 
 describe('configuration page navigation', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -81,5 +82,16 @@ describe('configuration page navigation', () => {
     await waitFor(() => expect(mocks.signOut).toHaveBeenCalledTimes(1));
     expect(mocks.router.push).toHaveBeenCalledWith('/');
     expect(mocks.router.refresh).toHaveBeenCalled();
+  });
+
+  it('reuses the homepage navigation and footer on the founder route without duplicate footer content', async () => {
+    mocks.pathname = '/founder';
+    render(<><Navbar /><FounderStoryPage /><Footer /></>);
+    const nav = screen.getByRole('navigation', { name: 'Main navigation' });
+    expect(within(nav).getByRole('link', { name: 'About' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Skip to content' })).toHaveAttribute('href', '#founder-content');
+    expect(screen.getAllByRole('contentinfo')).toHaveLength(1);
+    expect(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy');
+    await screen.findByRole('button', { name: 'Sign out' });
   });
 });
