@@ -1,8 +1,12 @@
 import React from 'react';
 
-export type ReadinessIconName = 'layers' | 'calendar' | 'shield' | 'context' | 'sparkles' | 'ticket' | 'examples' | 'plug' | 'card' | 'user' | 'info' | 'check' | 'minus';
+export type ReadinessIconName = 'layers' | 'calendar' | 'shield' | 'context' | 'sparkles' | 'ticket' | 'examples' | 'plug' | 'card' | 'user' | 'info' | 'check' | 'minus' | 'chart' | 'cube' | 'bug' | 'bolt';
 
 const paths: Record<ReadinessIconName, React.ReactNode> = {
+  chart: <><path d="M4 4v16h16M8 15l4-4 3 2 5-7" /></>,
+  cube: <><path d="m12 3 9 5v9l-9 5-9-5V8l9-5Zm0 9v10M3 8l9 4 9-4M8 5l9 5" /></>,
+  bug: <><rect x="7" y="7" width="10" height="14" rx="5" /><path d="M9 7V5a3 3 0 0 1 6 0v2M3 10h4m10 0h4M3 16h4m10 0h4M5 4l3 4m8 0 3-4M5 22l3-4m8 0 3 4M12 11v10" /></>,
+  bolt: <path d="M13 2 4 14h7l-1 8 10-13h-7l1-7Z" />,
   layers: <><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="m3 12 9 5 9-5M3 16l9 5 9-5" /></>,
   calendar: <><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M8 3v4m8-4v4M4 11h16" /></>,
   shield: <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" />,

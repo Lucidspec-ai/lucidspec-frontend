@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -15,7 +15,9 @@ import { ENGINEERING_INPUT_MESSAGE, isEngineeringRelatedInput } from '@/lib/engi
 import { Plan, normalizePlan } from '@/lib/plans';
 import { LeanTicketCard } from '@/components/tickets/LeanTicketCard';
 import { ReadinessCheckPanel } from '@/components/tickets/ReadinessCheckPanel';
-import { WorkspaceShell } from '@/components/workspace/WorkspaceShell';
+import { ReadinessShell } from '@/components/settings/ReadinessShell';
+import { ApplicationHeader } from '@/components/settings/ApplicationHeader';
+import { WorkRequestIntake, REQUEST_PRIVACY_DISCLOSURE } from '@/components/workspace/WorkRequestIntake';
 import { buildPromptPreview, SPEC_PROMPT_PLACEHOLDER } from './promptComposer';
 import {
   buildDispatchPayload,
@@ -1260,21 +1262,200 @@ export default function GeneratorPage() {
     </div>
   );
 
-  const pct =
-    quota && quota.limit > 0 ? Math.min(100, Math.round((quota.used / quota.limit) * 100)) : 0;
   const nextCycle = quota?.window_end ? new Date(quota.window_end) : null;
   const nextCycleLabel = nextCycle
     ? nextCycle.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
     : null;
-  const workspaceUsageLabel =
-    !quotaLoading && quota ? `${quota.used} / ${quota.limit} Specs` : 'Usage loading';
-  const activeWorkspaceHref = '/generator';
-  const workspaceHeaderStats = [
-    { label: `${planLabel} plan`, icon: 'pricing' as const },
-    !quotaLoading && quota
-      ? { label: `${quota.used} / ${quota.limit} used`, icon: 'spec' as const }
-      : { label: 'Usage loading', icon: 'spec' as const },
-  ];
+  const accountBadges = quota ? [
+    { label: `${planLabel} plan`, icon: 'card' as const },
+    { label: `${quota.used} / ${quota.limit} used`, icon: 'ticket' as const, title: nextCycleLabel ? `Next cycle starts ${nextCycleLabel}` : undefined },
+  ] : [{ label: quotaLoading ? 'Loading usage…' : 'Usage unavailable', icon: 'ticket' as const }];
+  const isInitialIntake = !readinessResult && !ticket;
+
+  const promptGuide = (
+    <>
+      {showWalkthrough && (
+        <div className="rounded-2xl border border-blue-100 bg-blue-50/50 px-4 py-3 shadow-[0_18px_45px_rgba(37,99,235,0.08)]">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-blue-700">
+                Prompt guide
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Lead with the task, then mention target systems, rollout constraints, dependencies, and how the work should be validated.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={markWalkthroughSeen}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-extrabold text-blue-700 shadow-sm hover:border-blue-300 hover:bg-blue-50"
+              >
+                What to include
+              </button>
+              <button
+                type="button"
+                onClick={() => dismissWalkthrough()}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-transparent px-3 text-sm font-extrabold text-slate-500 hover:text-slate-700"
+              >
+                Hide
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+  const promptAssistControl = (
+    <div className="relative" ref={promptAssistRef}>
+      <button
+        type="button"
+        onClick={() => {
+          setShowPromptAssist((prev) => !prev);
+        }}
+        aria-expanded={showPromptAssist}
+        aria-controls="prompt-assist"
+        className="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-extrabold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+      >
+        Tips &amp; starters
+      </button>
+      {showPromptAssist && (
+        <div
+          id="prompt-assist"
+          role="dialog"
+          aria-label="Prompt tips and starters"
+          className={isInitialIntake ? 'mt-3 max-h-[32rem] overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700' : 'absolute right-0 top-full z-20 mt-2 w-[min(30rem,calc(100vw-3rem))] rounded-2xl border border-blue-100 bg-white p-4 text-sm leading-6 text-slate-700 shadow-[0_24px_60px_rgba(15,23,42,0.14)]'}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-extrabold text-slate-950">Write a realistic prompt</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                Keep it outcome-first, then add environment, constraints, and rollout context.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPromptAssist(false)}
+              className="text-xs font-extrabold text-blue-600 hover:text-blue-700"
+            >
+              Close
+            </button>
+          </div>
+          <ol className="mt-3 list-decimal space-y-2 pl-4 text-sm">
+            <li>Describe the outcome you expect and who needs it.</li>
+            <li>Mention the platforms, services, environments, or tooling involved.</li>
+            <li>Call out dependencies, rollout phases, or ownership constraints so estimates stay realistic.</li>
+            <li>Spell out validations, policies, or edge cases LucidSpec must preserve.</li>
+          </ol>
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            <span className="font-extrabold text-slate-700">Privacy:</span>{' '}
+            {REQUEST_PRIVACY_DISCLOSURE}
+          </div>
+          <div className="mt-4">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-blue-700">
+              Example workflow families
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+              These are examples of request families LucidSpec can review. They are not a promise of direct deterministic support for every workflow in that family.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {EXAMPLE_WORKFLOW_FAMILIES.map((domain) => (
+                <span
+                  key={domain}
+                  className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-900"
+                >
+                  {domain}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-blue-700">
+              What to expect from results
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {SUPPORT_DEPTH_EXPECTATIONS.map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
+                >
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-700">
+                    {item.title}
+                  </p>
+                  <p className="mt-1 text-[11px] leading-5 text-slate-600">
+                    {item.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 max-h-80 overflow-y-auto pr-1">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-blue-700">
+              Starter prompts for grounded requests
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+              Use these as writing examples, not support claims. LucidSpec may return direct, family-level, partial, or unsupported results depending on the exact workflow and missing details.
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+              Prefer concrete workflow wording like <span className="font-semibold text-slate-700">S3 lifecycle policy</span> over broad phrases like <span className="font-semibold text-slate-700">storage optimization</span>.
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+              For software-delivery requests, prefer concrete workflow wording like <span className="font-semibold text-slate-700">CI/CD pipeline change</span>, <span className="font-semibold text-slate-700">deployment workflow change</span>, <span className="font-semibold text-slate-700">ECS deployment</span>, or <span className="font-semibold text-slate-700">software bug fix</span> over broad phrases like <span className="font-semibold text-slate-700">delivery optimization</span>, <span className="font-semibold text-slate-700">improve the pipeline</span>, or <span className="font-semibold text-slate-700">release process improvement</span>.
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+              For application configuration requests, use exact wording like <span className="font-semibold text-slate-700">config change</span>, <span className="font-semibold text-slate-700">feature flag</span>, <span className="font-semibold text-slate-700">environment variable</span>, or <span className="font-semibold text-slate-700">values.yaml</span> and name the target service, config surface, config key, proposed value, dependencies, approval, change window, validation, and rollback path instead of broad phrases like <span className="font-semibold text-slate-700">configuration cleanup</span>, <span className="font-semibold text-slate-700">tune app settings</span>, or <span className="font-semibold text-slate-700">optimize runtime config</span>.
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+              For storage-related requests, name the exact route you want reviewed, such as the bucket, prefix, retention, transition, or expiration behavior in an <span className="font-semibold text-slate-700">S3 lifecycle policy</span>, or the datastore, capacity, storage tier, dependencies, and rollback path in a <span className="font-semibold text-slate-700">storage provisioning</span> request.
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+              For CI/CD pipeline requests, name the exact route you want reviewed, such as the target service, deployment or workflow path, concrete pipeline-stage change, dependencies, approval, validation, and rollback path in a <span className="font-semibold text-slate-700">CI/CD pipeline change</span> request.
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+              For deployment workflow requests, use exact <span className="font-semibold text-slate-700">deployment workflow change</span> wording and name the target service, current workflow, proposed workflow change, dependencies, approval, change window, validation, and rollback path instead of broad requests like <span className="font-semibold text-slate-700">clean up release flow</span> or <span className="font-semibold text-slate-700">optimize delivery</span>.
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+              For platform build requests, name the exact route you want reviewed, such as a <span className="font-semibold text-slate-700">server build</span> with the target host, environment, sizing, template or image, dependencies, validation, and rollback path, instead of broad phrases like <span className="font-semibold text-slate-700">platform setup</span> or <span className="font-semibold text-slate-700">infrastructure expansion</span>.
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+              For compliance remediation requests, use exact workflow wording like <span className="font-semibold text-slate-700">audit control fix</span>, <span className="font-semibold text-slate-700">evidence gap remediation</span>, <span className="font-semibold text-slate-700">tagging control remediation</span>, or <span className="font-semibold text-slate-700">policy enforcement change</span> and name the control requirement, evidence gap, or guardrail, owner, evidence expectation, validation standard, approvals, and rollback or containment path instead of broad phrases like <span className="font-semibold text-slate-700">compliance cleanup</span>, <span className="font-semibold text-slate-700">audit work</span>, or <span className="font-semibold text-slate-700">enforce policy everywhere</span>.
+            </p>
+            <div className="mt-3 space-y-3">
+              {PROMPT_STARTERS.map((group) => (
+                <div key={group.domain} className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    {group.domain}
+                  </p>
+                  <div className="space-y-2">
+                    {group.prompts.map((starter) => (
+                      <button
+                        key={starter}
+                        type="button"
+                        onClick={() => {
+                          setTask(starter);
+                          setShowPromptAssist(false);
+                          taskInputRef.current?.focus();
+                        }}
+                        className="w-full rounded-xl border border-blue-100 bg-white px-3 py-2 text-left text-sm text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      >
+                        {starter}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+  const requestError = error ? (
+    <div role="alert" className="whitespace-pre-wrap rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+      {error}{' '}
+      {/(quota_exceeded|Backend responded 402)/i.test(error) && <a href="/pricing" className="ml-1 text-blue-600 underline">Go to Pricing →</a>}
+    </div>
+  ) : null;
 
   const handleWorkspaceSignOut = async () => {
     try {
@@ -1337,19 +1518,9 @@ export default function GeneratorPage() {
   }
 
   return (
-    <WorkspaceShell
-      activeHref={activeWorkspaceHref}
-      headerEyebrow=""
-      headerDescription=""
-      headerStats={workspaceHeaderStats}
-      planLabel={planLabel}
-      planUsageLabel={workspaceUsageLabel}
-      showUsageCostNav={isAdmin}
-      usagePercent={pct}
-      userEmail={email}
-      onSignOut={handleWorkspaceSignOut}
-    >
-      <div className="px-5 py-5 lg:px-8">
+    <>
+    <ApplicationHeader readiness signedIn userEmail={email} onSignOut={handleWorkspaceSignOut} onSignIn={() => router.push('/signin?next=' + encodeURIComponent(generatorPath))} contentId="work-request-content" accountBadges={accountBadges} />
+    <ReadinessShell activeHref="/generator" pageLabel="Work Requests" contentId="work-request-content" showUsageCostNav={isAdmin}>
       {showEngineeringInputDialog && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
@@ -1377,50 +1548,22 @@ export default function GeneratorPage() {
           </div>
         </div>
       )}
-      <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-[28px] font-extrabold leading-tight text-slate-950 md:text-[34px]">
-            Generate Spec
-          </h1>
-          <p className="mt-2 text-sm font-medium text-slate-500">
-            Signed in as {email || '—'}
-            {nextCycleLabel ? ` · Next cycle starts ${nextCycleLabel}` : ''}
-          </p>
-        </div>
-      </div>
+      <header className="mb-10 pt-2">
+        <nav aria-label="Breadcrumb" className="mb-5 flex items-center gap-2 text-sm text-slate-500"><Link href="/generator" className="hover:text-blue-700">Work Requests</Link><span aria-hidden="true">/</span><span aria-current="page">{isInitialIntake ? 'New Request' : 'Readiness Review'}</span></nav>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-[40px] sm:leading-tight">{isInitialIntake ? 'Start with what you know.' : 'Work Requests'}</h1>
+        {isInitialIntake ? <p className="mt-2 max-w-5xl text-sm leading-7 text-slate-600 sm:text-lg">Describe the work in plain language. LucidSpec will assess it against your configured readiness standards and help you identify what needs clarification.</p> : null}
+      </header>
 
       <>
-          <section className="space-y-5">
-            {showWalkthrough && (
-              <div className="rounded-2xl border border-blue-100 bg-blue-50/50 px-4 py-3 shadow-[0_18px_45px_rgba(37,99,235,0.08)]">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-blue-700">
-                      Prompt guide
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-slate-600">
-                      Lead with the task, then mention target systems, rollout constraints, dependencies, and how the work should be validated.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={markWalkthroughSeen}
-                      className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-extrabold text-blue-700 shadow-sm hover:border-blue-300 hover:bg-blue-50"
-                    >
-                      What to include
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => dismissWalkthrough()}
-                      className="inline-flex h-9 items-center justify-center rounded-xl border border-transparent px-3 text-sm font-extrabold text-slate-500 hover:text-slate-700"
-                    >
-                      Hide
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+          {isInitialIntake ? <WorkRequestIntake
+            value={task} onChange={setTask} inputRef={taskInputRef}
+            isPlaceholder={isPlaceholder} onPlaceholderChange={setIsPlaceholder}
+            onCheckReadiness={() => onCheckReadiness()} checkingReadiness={checkingReadiness} busy={ticketFlowLoading}
+            onSavePlaceholder={onSavePlaceholder} savingPlaceholder={savingPlaceholder} savedTicketId={savedTicketId}
+            advancedContent={<>{promptGuide}{promptAssistControl}</>} error={requestError}
+            loadingPanel={ticketFlowLoading ? renderLoadingPanel() : null}
+          /> : <section className="space-y-5">
+            {promptGuide}
 
             <div className="space-y-3 rounded-3xl border border-blue-100 bg-white p-4 shadow-[0_18px_45px_rgba(37,99,235,0.08)] sm:p-5">
               {isPromptCollapsed && (readinessResult || ticket || ticketFlowLoading) ? (
@@ -1461,7 +1604,7 @@ export default function GeneratorPage() {
                   </div>
                   <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-[11px] font-medium text-slate-500">
                     <span className="font-extrabold text-slate-600">Privacy:</span>{' '}
-                    Sensitive identifiers may be masked before processing.
+                    {REQUEST_PRIVACY_DISCLOSURE}
                   </div>
                   {ticketFlowLoading ? renderLoadingPanel() : null}
                 </div>
@@ -1477,152 +1620,11 @@ export default function GeneratorPage() {
                           Describe the work in plain English. LucidSpec will infer structure from the task, constraints, and validation details you provide, then stay conservative if workflow support or execution details are incomplete.
                         </p>
                       </div>
-                      <div className="relative" ref={promptAssistRef}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowPromptAssist((prev) => !prev);
-                          }}
-                          aria-expanded={showPromptAssist}
-                          aria-controls="prompt-assist"
-                          className="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-extrabold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                        >
-                          Tips &amp; starters
-                        </button>
-                        {showPromptAssist && (
-                          <div
-                            id="prompt-assist"
-                            role="dialog"
-                            aria-label="Prompt tips and starters"
-                            className="absolute right-0 top-full z-20 mt-2 w-[min(30rem,calc(100vw-3rem))] rounded-2xl border border-blue-100 bg-white p-4 text-sm leading-6 text-slate-700 shadow-[0_24px_60px_rgba(15,23,42,0.14)]"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="font-extrabold text-slate-950">Write a realistic prompt</p>
-                                <p className="mt-1 text-xs font-medium text-slate-500">
-                                  Keep it outcome-first, then add environment, constraints, and rollout context.
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setShowPromptAssist(false)}
-                                className="text-xs font-extrabold text-blue-600 hover:text-blue-700"
-                              >
-                                Close
-                              </button>
-                            </div>
-                            <ol className="mt-3 list-decimal space-y-2 pl-4 text-sm">
-                              <li>Describe the outcome you expect and who needs it.</li>
-                              <li>Mention the platforms, services, environments, or tooling involved.</li>
-                              <li>Call out dependencies, rollout phases, or ownership constraints so estimates stay realistic.</li>
-                              <li>Spell out validations, policies, or edge cases LucidSpec must preserve.</li>
-                            </ol>
-                            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                              <span className="font-extrabold text-slate-700">Privacy:</span>{' '}
-                              Sensitive identifiers are masked before processing. You’ll see placeholders like [PII:EMAIL].
-                            </div>
-                            <div className="mt-4">
-                              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-blue-700">
-                                Example workflow families
-                              </p>
-                              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                                These are examples of request families LucidSpec can review. They are not a promise of direct deterministic support for every workflow in that family.
-                              </p>
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                {EXAMPLE_WORKFLOW_FAMILIES.map((domain) => (
-                                  <span
-                                    key={domain}
-                                    className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-900"
-                                  >
-                                    {domain}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="mt-4">
-                              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-blue-700">
-                                What to expect from results
-                              </p>
-                              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                                {SUPPORT_DEPTH_EXPECTATIONS.map((item) => (
-                                  <div
-                                    key={item.title}
-                                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
-                                  >
-                                    <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-700">
-                                      {item.title}
-                                    </p>
-                                    <p className="mt-1 text-[11px] leading-5 text-slate-600">
-                                      {item.body}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="mt-4 max-h-80 overflow-y-auto pr-1">
-                              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-blue-700">
-                                Starter prompts for grounded requests
-                              </p>
-                              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                                Use these as writing examples, not support claims. LucidSpec may return direct, family-level, partial, or unsupported results depending on the exact workflow and missing details.
-                              </p>
-                              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                                Prefer concrete workflow wording like <span className="font-semibold text-slate-700">S3 lifecycle policy</span> over broad phrases like <span className="font-semibold text-slate-700">storage optimization</span>.
-                              </p>
-                              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                                For software-delivery requests, prefer concrete workflow wording like <span className="font-semibold text-slate-700">CI/CD pipeline change</span>, <span className="font-semibold text-slate-700">deployment workflow change</span>, <span className="font-semibold text-slate-700">ECS deployment</span>, or <span className="font-semibold text-slate-700">software bug fix</span> over broad phrases like <span className="font-semibold text-slate-700">delivery optimization</span>, <span className="font-semibold text-slate-700">improve the pipeline</span>, or <span className="font-semibold text-slate-700">release process improvement</span>.
-                              </p>
-                              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                                For application configuration requests, use exact wording like <span className="font-semibold text-slate-700">config change</span>, <span className="font-semibold text-slate-700">feature flag</span>, <span className="font-semibold text-slate-700">environment variable</span>, or <span className="font-semibold text-slate-700">values.yaml</span> and name the target service, config surface, config key, proposed value, dependencies, approval, change window, validation, and rollback path instead of broad phrases like <span className="font-semibold text-slate-700">configuration cleanup</span>, <span className="font-semibold text-slate-700">tune app settings</span>, or <span className="font-semibold text-slate-700">optimize runtime config</span>.
-                              </p>
-                              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                                For storage-related requests, name the exact route you want reviewed, such as the bucket, prefix, retention, transition, or expiration behavior in an <span className="font-semibold text-slate-700">S3 lifecycle policy</span>, or the datastore, capacity, storage tier, dependencies, and rollback path in a <span className="font-semibold text-slate-700">storage provisioning</span> request.
-                              </p>
-                              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                                For CI/CD pipeline requests, name the exact route you want reviewed, such as the target service, deployment or workflow path, concrete pipeline-stage change, dependencies, approval, validation, and rollback path in a <span className="font-semibold text-slate-700">CI/CD pipeline change</span> request.
-                              </p>
-                              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                                For deployment workflow requests, use exact <span className="font-semibold text-slate-700">deployment workflow change</span> wording and name the target service, current workflow, proposed workflow change, dependencies, approval, change window, validation, and rollback path instead of broad requests like <span className="font-semibold text-slate-700">clean up release flow</span> or <span className="font-semibold text-slate-700">optimize delivery</span>.
-                              </p>
-                              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                                For platform build requests, name the exact route you want reviewed, such as a <span className="font-semibold text-slate-700">server build</span> with the target host, environment, sizing, template or image, dependencies, validation, and rollback path, instead of broad phrases like <span className="font-semibold text-slate-700">platform setup</span> or <span className="font-semibold text-slate-700">infrastructure expansion</span>.
-                              </p>
-                              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                                For compliance remediation requests, use exact workflow wording like <span className="font-semibold text-slate-700">audit control fix</span>, <span className="font-semibold text-slate-700">evidence gap remediation</span>, <span className="font-semibold text-slate-700">tagging control remediation</span>, or <span className="font-semibold text-slate-700">policy enforcement change</span> and name the control requirement, evidence gap, or guardrail, owner, evidence expectation, validation standard, approvals, and rollback or containment path instead of broad phrases like <span className="font-semibold text-slate-700">compliance cleanup</span>, <span className="font-semibold text-slate-700">audit work</span>, or <span className="font-semibold text-slate-700">enforce policy everywhere</span>.
-                              </p>
-                              <div className="mt-3 space-y-3">
-                                {PROMPT_STARTERS.map((group) => (
-                                  <div key={group.domain} className="space-y-2">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                      {group.domain}
-                                    </p>
-                                    <div className="space-y-2">
-                                      {group.prompts.map((starter) => (
-                                        <button
-                                          key={starter}
-                                          type="button"
-                                          onClick={() => {
-                                            setTask(starter);
-                                            setShowPromptAssist(false);
-                                            taskInputRef.current?.focus();
-                                          }}
-                                          className="w-full rounded-xl border border-blue-100 bg-white px-3 py-2 text-left text-sm text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                        >
-                                          {starter}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      {promptAssistControl}
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-[11px] font-medium text-slate-500">
                       <span className="font-extrabold text-slate-600">Privacy:</span>{' '}
-                      Sensitive identifiers are masked before processing. You may see placeholders like [PII:EMAIL].
+                      {REQUEST_PRIVACY_DISCLOSURE}
                     </div>
                     <textarea
                       rows={readinessResult || ticket ? 5 : 7}
@@ -1693,7 +1695,7 @@ export default function GeneratorPage() {
               )}
             </div>
 
-          </section>
+          </section>}
 
           {readinessResult && !ticket && (
             <section ref={ticketResultRef} className="mt-6 space-y-4">
@@ -1760,7 +1762,7 @@ export default function GeneratorPage() {
           )}
       </>
 
-      </div>
-    </WorkspaceShell>
+    </ReadinessShell>
+    </>
   );
 }

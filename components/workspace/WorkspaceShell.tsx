@@ -32,7 +32,7 @@ type WorkspaceShellProps = {
 };
 
 const sidebarLinks: Array<{ label: string; href: string; icon: WorkspaceIconName; adminOnly?: boolean }> = [
-  { label: 'Generate Spec', href: '/generator', icon: 'spec' },
+  { label: 'Work Requests', href: '/generator', icon: 'spec' },
   { label: 'Usage & Cost', href: '/usage-cost', icon: 'chart', adminOnly: true },
   { label: 'Plan & Billing', href: '/pricing', icon: 'pricing' },
   { label: 'Account', href: '/account', icon: 'account' },

@@ -1,6 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { ReadinessIcon, type ReadinessIconName } from '@/components/readiness/ReadinessIcon';
 
 export function ApplicationHeader({
   signedIn,
@@ -8,22 +9,27 @@ export function ApplicationHeader({
   onSignOut,
   onSignIn,
   readiness = false,
+  contentId = 'configuration-content',
+  accountBadges = [],
 }: {
   signedIn: boolean;
   userEmail?: string;
   onSignOut: () => void | Promise<void>;
   onSignIn: () => void;
   readiness?: boolean;
+  contentId?: string;
+  accountBadges?: { label: string; icon: ReadinessIconName; title?: string }[];
 }) {
   if (readiness) return (
     <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white">
-      <a href="#configuration-content" className="sr-only rounded-lg bg-blue-600 p-3 text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-40">Skip to settings</a>
+      <a href={`#${contentId}`} className="sr-only rounded-lg bg-blue-600 p-3 text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-40">{contentId === 'configuration-content' ? 'Skip to settings' : 'Skip to work request'}</a>
       <div className="flex h-[72px] items-center justify-between">
         <Link href="/generator" aria-label="LucidSpec — create tickets" className="flex h-full shrink-0 items-center gap-2.5 px-4 text-2xl font-bold tracking-tight text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 sm:px-7 xl:w-72 xl:border-r xl:border-slate-200/80 xl:px-10">
           <Image src="/brand/lucidspec-icon.svg" alt="" width={30} height={30} />
           <span>Lucid<span className="text-blue-600">Spec</span></span>
         </Link>
         <nav aria-label="Application" className="flex min-w-0 items-center gap-2 px-3 sm:gap-4 sm:px-7 xl:px-10">
+          <div className="hidden items-center gap-2 md:flex">{accountBadges.map((badge) => <span key={badge.label} title={badge.title} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600"><ReadinessIcon name={badge.icon} className="h-4 w-4 text-blue-600" />{badge.label}</span>)}</div>
           {signedIn ? <>
             <Link href="/account" className="flex min-h-11 min-w-0 items-center gap-3 rounded-full border border-slate-200 py-1 pl-1 pr-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600" aria-label="Your account settings">
               <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-700">{userEmail?.slice(0, 1).toUpperCase() || 'L'}</span>
@@ -33,6 +39,7 @@ export function ApplicationHeader({
           </> : <button type="button" onClick={onSignIn} className="min-h-11 rounded-lg px-3 text-sm text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">Sign in</button>}
         </nav>
       </div>
+      {accountBadges.length > 0 ? <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 px-4 py-2 text-xs text-slate-600 md:hidden" aria-label="Account usage">{accountBadges.map((badge) => <span key={badge.label} title={badge.title} className="inline-flex items-center gap-2"><ReadinessIcon name={badge.icon} className="h-4 w-4 text-blue-600" />{badge.label}</span>)}</div> : null}
     </header>
   );
   return (
@@ -44,7 +51,7 @@ export function ApplicationHeader({
           <span>Lucid<span className="text-blue-600">Spec</span></span>
         </Link>
         <nav aria-label="Application" className="flex flex-wrap items-center gap-1 text-sm font-semibold sm:gap-2 [&_a]:rounded-lg [&_a]:px-3 [&_a]:py-3 [&_a]:focus-visible:outline [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-2 [&_a]:focus-visible:outline-blue-600">
-          <Link href="/generator" className="text-slate-600 hover:bg-slate-50 hover:text-slate-950">Create tickets</Link>
+          <Link href="/generator" className="text-slate-600 hover:bg-slate-50 hover:text-slate-950">Work Requests</Link>
           <Link href="/account" className="bg-blue-50 text-blue-700">Settings</Link>
           {signedIn ? (
             <>

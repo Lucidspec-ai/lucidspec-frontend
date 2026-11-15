@@ -31,7 +31,7 @@ describe('configuration page navigation', () => {
       mocks.pathname = pathname;
       render(<><Navbar /><Footer /></>);
       const nav = screen.getByRole('navigation', { name: 'Application' });
-      expect(within(nav).getByRole('link', { name: 'Create tickets' })).toHaveAttribute('href', '/generator');
+      expect(within(nav).getByRole('link', { name: 'Work Requests' })).toHaveAttribute('href', '/generator');
       expect(within(nav).getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/account');
       expect(screen.queryByRole('link', { name: 'Features' })).not.toBeInTheDocument();
       expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
