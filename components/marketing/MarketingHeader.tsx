@@ -59,7 +59,11 @@ export function MarketingHeader({ signedIn, onSignIn, onSignOut, adminLink, cont
     <nav id="marketing-mobile-menu" aria-label="Mobile navigation" hidden={!menuOpen} className="border-t border-slate-100 bg-white px-5 pb-5 pt-3 xl:hidden">
       <div className="grid gap-1 text-sm font-semibold text-slate-700 sm:grid-cols-2" onClick={closeMenu}>
         <Link href="/features" className="rounded-lg px-3 py-3 hover:bg-blue-50">Product overview</Link>
-        {LINKS.map(link => <Link key={link.href} href={link.href} aria-current={currentPath === link.href ? 'page' : undefined} className={`rounded-lg px-3 py-3 hover:bg-blue-50 ${currentPath === link.href ? 'text-blue-700' : ''}`}>{link.label}</Link>)}
+        {LINKS.map(link => {
+          // Native hash navigation runs after the menu closes, so its height cannot obscure the target.
+          const NavigationLink = link.href.startsWith('/#') ? 'a' : Link;
+          return <NavigationLink key={link.href} href={link.href} aria-current={currentPath === link.href ? 'page' : undefined} className={`rounded-lg px-3 py-3 hover:bg-blue-50 ${currentPath === link.href ? 'text-blue-700' : ''}`}>{link.label}</NavigationLink>;
+        })}
       </div>
       <div className="mt-3 flex flex-wrap gap-3 border-t border-slate-100 pt-4 sm:hidden">
         {signedIn ? <><Link href="/generator" onClick={closeMenu} className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-800">Work Requests</Link><button type="button" onClick={() => { closeMenu(); onSignOut(); }} className="min-h-11 rounded-lg px-3 text-sm font-semibold text-slate-700">Sign out</button></> : <button type="button" onClick={() => { closeMenu(); onSignIn(); }} className="min-h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-800">Sign in</button>}

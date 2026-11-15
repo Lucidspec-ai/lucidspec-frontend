@@ -1,8 +1,9 @@
 import React, { type ReactNode } from 'react';
 import Link from 'next/link';
 import { ReadinessIcon, type ReadinessIconName } from '@/components/readiness/ReadinessIcon';
-import { ClarificationBadge, ExampleFindings, ProductPreview } from '@/components/marketing/ProductPreview';
+import { ProductPreview } from '@/components/marketing/ProductPreview';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
+import { HowItWorksSection } from '@/components/marketing/HowItWorksSection';
 
 const PRIMARY_CTA = 'inline-flex min-h-12 items-center justify-center gap-3 rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700';
 const CAPABILITIES = [
@@ -42,12 +43,6 @@ function FlowArrow({ className = '' }: { className?: string }) {
   return <svg aria-hidden="true" viewBox="0 0 32 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={`h-6 w-8 text-slate-400 ${className}`}><path d="M3 12h24m-8-8 8 8-8 8" /></svg>;
 }
 
-function WorkflowCard({ step }: { step: number }) {
-  return <div className="mt-5 min-h-[150px] md:mt-0 lg:mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_6px_20px_-14px_rgba(37,99,235,0.3)]">
-    {step === 1 ? <><p className="text-sm font-semibold text-slate-950">Describe the work</p><p className="mt-2 min-h-[88px] rounded-lg border border-blue-300 bg-white p-3 text-sm leading-6 text-slate-700">Update the billing service…<span aria-hidden="true" className="ml-0.5 inline-block h-4 w-px translate-y-0.5 bg-blue-600" /></p></> : step === 2 ? <><ClarificationBadge /><div className="mt-3"><ExampleFindings /></div></> : <><span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900"><ReadinessIcon name="check" className="h-4 w-4" />Prepared for handoff</span><div className="mt-5 flex gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-50 text-slate-500"><ReadinessIcon name="ticket" /></span><div className="flex-1"><p className="text-xs font-semibold text-slate-950">Structured ticket</p><div aria-hidden="true" className="mt-3 h-1.5 rounded-full bg-slate-200" /><div aria-hidden="true" className="mt-2 h-1.5 w-3/4 rounded-full bg-slate-100" /></div></div></>}
-  </div>;
-}
-
 export default function HomeContent() {
   return <div id="homepage-content" tabIndex={-1} className="bg-white text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 [&_a]:focus-visible:outline [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-blue-600">
     <section aria-labelledby="homepage-title" className="bg-[radial-gradient(ellipse_at_75%_30%,#edf3ff_0%,#ffffff_72%)]">
@@ -77,17 +72,7 @@ export default function HomeContent() {
       </div>
     </section>
 
-    <section id="how-it-works" aria-label="How LucidSpec works" className="mx-auto max-w-[1344px] scroll-mt-24 px-5 py-9 sm:px-8 sm:py-8">
-      <SectionHeading title="How LucidSpec works">Turn a rough work request into a clearer, better-prepared engineering handoff.</SectionHeading>
-      <ol className="mt-7 grid gap-7 lg:grid-cols-3 lg:gap-10">
-        {[
-          { title: 'Describe the work', description: 'Start with what you know. Your request does not have to be complete.' },
-          { title: 'Review readiness findings', description: 'See what needs clarification against your readiness standards.' },
-          { title: 'Clarify and prepare for execution', description: 'Address findings and review the resulting structured work.' },
-        ].map((step, index) => <li key={step.title} className="relative min-w-0 md:grid md:grid-cols-[1fr_1.2fr] md:items-center md:gap-6 lg:block"><div className="flex items-start gap-3"><span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-lg font-semibold text-blue-600">{index + 1}</span><div><h3 className="text-sm font-semibold leading-6 text-slate-950 sm:text-base">{step.title}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{step.description}</p></div></div><WorkflowCard step={index + 1} />{index < 2 ? <FlowArrow className="absolute -right-9 bottom-16 hidden lg:block" /> : null}</li>)}
-      </ol>
-      <p className="mt-3 text-center text-xs leading-5 text-slate-500">Illustrative workflow. Readiness depends on the information supplied and your selected checks.</p>
-    </section>
+    <HowItWorksSection />
 
     <section id="capabilities" aria-label="LucidSpec capabilities" className="mx-auto max-w-[1408px] scroll-mt-24 px-5 py-9 sm:px-8 sm:py-8">
       <SectionHeading title="What you can do with LucidSpec" />

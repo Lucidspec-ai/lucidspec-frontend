@@ -21,14 +21,25 @@ describe('marketing homepage', () => {
 
   it('labels the product view as an example and does not expose pretend assessment controls', () => {
     render(<HomeContent />);
-    const preview = screen.getByRole('figure', { name: /not a live assessment/ });
+    const preview = screen.getByRole('figure', { name: 'Illustrative product view. Findings shown are examples, not a live assessment.' });
     expect(within(preview).getByText('Illustrative example')).toBeInTheDocument();
     expect(within(preview).getByText('Needs clarification')).toBeInTheDocument();
     expect(within(preview).getByText('Deployment procedure unspecified')).toBeInTheDocument();
     expect(within(preview).queryByRole('textbox')).not.toBeInTheDocument();
     expect(within(preview).queryByRole('button')).not.toBeInTheDocument();
     expect(within(preview).queryByRole('status')).not.toBeInTheDocument();
-    expect(screen.getByText(/Readiness depends on the information supplied/)).toBeInTheDocument();
+    expect(screen.getByText('Illustrative workflow. Findings and readiness depend on configured checks and supplied information.')).toBeInTheDocument();
+  });
+
+  it('preserves the surrounding homepage sections and one workflow anchor', () => {
+    const { container } = render(<HomeContent />);
+    expect(container.querySelectorAll('#how-it-works')).toHaveLength(1);
+    expect(screen.getByRole('region', { name: "Catch what's missing before it reaches engineering." })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: "The problem: work often looks complete, but isn't ready." })).toBeInTheDocument();
+    for (const name of ['LucidSpec capabilities', 'Integrations', 'Review and control', 'Make work ready before execution begins.']) {
+      expect(screen.getByRole('region', { name })).toBeInTheDocument();
+    }
+    expect(screen.getAllByRole('contentinfo')).toHaveLength(1);
   });
 
   it('distinguishes configurable connections from planned handoffs without security or certification promises', () => {
@@ -78,6 +89,13 @@ describe('homepage navigation', () => {
     expect(within(mobile).getByRole('link', { name: 'Product overview' })).toHaveAttribute('href', '/features');
     await user.keyboard('{Escape}');
     expect(toggle).toHaveFocus();
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).not.toBeInTheDocument();
+    await user.click(toggle);
+    const workflowLink = within(screen.getByRole('navigation', { name: 'Mobile navigation' })).getByRole('link', { name: 'How It Works' });
+    expect(workflowLink).toHaveAttribute('href', '/#how-it-works');
+    workflowLink.addEventListener('click', event => event.preventDefault(), { once: true });
+    await user.click(workflowLink);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).not.toBeInTheDocument();
   });
