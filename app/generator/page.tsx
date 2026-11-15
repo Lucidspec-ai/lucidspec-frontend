@@ -18,6 +18,7 @@ import { ReadinessCheckPanel } from '@/components/tickets/ReadinessCheckPanel';
 import { ReadinessShell } from '@/components/settings/ReadinessShell';
 import { ApplicationHeader } from '@/components/settings/ApplicationHeader';
 import { WorkRequestIntake, REQUEST_PRIVACY_DISCLOSURE } from '@/components/workspace/WorkRequestIntake';
+import { ReadinessIcon } from '@/components/readiness/ReadinessIcon';
 import { buildPromptPreview, SPEC_PROMPT_PLACEHOLDER } from './promptComposer';
 import {
   buildDispatchPayload,
@@ -403,6 +404,7 @@ export default function GeneratorPage() {
   const [task, setTask] = useState('');
   const [error, setError] = useState<string>('');
   const [readinessResult, setReadinessResult] = useState<ReadinessCheckResponse | null>(null);
+  const [overriddenAssessment, setOverriddenAssessment] = useState<ReadinessCheckResponse | null>(null);
   const [checkingReadiness, setCheckingReadiness] = useState(false);
   const [overridingReadiness, setOverridingReadiness] = useState(false);
   const [overrideError, setOverrideError] = useState<string | null>(null);
@@ -729,6 +731,7 @@ export default function GeneratorPage() {
 
     setError('');
     setReadinessResult(null);
+    setOverriddenAssessment(null);
     setTicket(null);
     setDispatchResult(null);
     setTicketFeedbackTargetId(null);
@@ -791,7 +794,7 @@ export default function GeneratorPage() {
       setIsPromptCollapsed(true);
       setLastReadinessRequestHash(requestHash);
       dismissWalkthrough();
-      toast.success(data.ready ? 'Looks ready' : 'Readiness check complete');
+      toast.success('Readiness check complete');
     } catch (e: any) {
       const msg = String(e?.message || '');
 
@@ -945,6 +948,7 @@ export default function GeneratorPage() {
       // (both here and server-side in build_ticket_detail) opens up --
       // the override IS the record of why this is being treated as ready,
       // not a way to skip having one.
+      setOverriddenAssessment(readinessResult);
       setReadinessResult({
         ...readinessResult,
         ready: true,
@@ -1548,10 +1552,10 @@ export default function GeneratorPage() {
           </div>
         </div>
       )}
-      <header className="mb-10 pt-2">
-        <nav aria-label="Breadcrumb" className="mb-5 flex items-center gap-2 text-sm text-slate-500"><Link href="/generator" className="hover:text-blue-700">Work Requests</Link><span aria-hidden="true">/</span><span aria-current="page">{isInitialIntake ? 'New Request' : 'Readiness Review'}</span></nav>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-[40px] sm:leading-tight">{isInitialIntake ? 'Start with what you know.' : 'Work Requests'}</h1>
-        {isInitialIntake ? <p className="mt-2 max-w-5xl text-sm leading-7 text-slate-600 sm:text-lg">Describe the work in plain language. LucidSpec will assess it against your configured readiness standards and help you identify what needs clarification.</p> : null}
+      <header ref={!ticket ? ticketResultRef : undefined} className={`${readinessResult && !ticket ? 'mb-4' : 'mb-10 pt-2'} scroll-mt-28`}>
+        <nav aria-label="Breadcrumb" className={`${readinessResult && !ticket ? 'mb-3' : 'mb-5'} flex items-center gap-2 text-sm text-slate-500`}><Link href="/generator" className="hover:text-blue-700">Work Requests</Link><span aria-hidden="true">/</span><span aria-current="page">{isInitialIntake ? 'New Request' : 'Readiness Review'}</span></nav>
+        <h1 className={`text-3xl font-bold tracking-tight text-slate-950 sm:leading-tight ${readinessResult && !ticket ? 'sm:text-4xl' : 'sm:text-[40px]'}`}>{isInitialIntake ? 'Start with what you know.' : readinessResult && !ticket ? 'Readiness Review' : 'Work Requests'}</h1>
+        {isInitialIntake ? <p className="mt-2 max-w-5xl text-sm leading-7 text-slate-600 sm:text-lg">Describe the work in plain language. LucidSpec will assess it against your configured readiness standards and help you identify what needs clarification.</p> : readinessResult && !ticket ? <p className="mt-2 max-w-5xl text-sm leading-7 text-slate-600 sm:text-base">Review what LucidSpec found, check uncertain details, and address outstanding questions.</p> : null}
       </header>
 
       <>
@@ -1563,10 +1567,15 @@ export default function GeneratorPage() {
             advancedContent={<>{promptGuide}{promptAssistControl}</>} error={requestError}
             loadingPanel={ticketFlowLoading ? renderLoadingPanel() : null}
           /> : <section className="space-y-5">
-            {promptGuide}
+            {!readinessResult || !isPromptCollapsed ? promptGuide : null}
 
-            <div className="space-y-3 rounded-3xl border border-blue-100 bg-white p-4 shadow-[0_18px_45px_rgba(37,99,235,0.08)] sm:p-5">
-              {isPromptCollapsed && (readinessResult || ticket || ticketFlowLoading) ? (
+            <div className={isPromptCollapsed && readinessResult && !ticket ? 'rounded-2xl border border-blue-100 bg-white p-4 shadow-sm' : 'space-y-3 rounded-3xl border border-blue-100 bg-white p-4 shadow-[0_18px_45px_rgba(37,99,235,0.08)] sm:p-5'}>
+              {isPromptCollapsed && readinessResult && !ticket ? (
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600"><ReadinessIcon name="ticket" className="h-5 w-5" /></span><div className="min-w-0"><h2 className="text-xs font-semibold text-slate-500">Work request</h2><p className="mt-1 text-sm font-semibold leading-6 text-slate-900 [overflow-wrap:anywhere]">{buildPromptPreview(task)}</p>{task.trim().length > 220 ? <details className="mt-2"><summary className="min-h-8 cursor-pointer text-xs font-medium text-blue-700">View full request</summary><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700 [overflow-wrap:anywhere]">{task}</p></details> : null}</div></div>
+                  <button type="button" onClick={() => expandPromptComposer(true)} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-blue-50">Edit request</button>
+                </div>
+              ) : isPromptCollapsed && (readinessResult || ticket || ticketFlowLoading) ? (
                 <div className="space-y-3">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
@@ -1698,9 +1707,12 @@ export default function GeneratorPage() {
           </section>}
 
           {readinessResult && !ticket && (
-            <section ref={ticketResultRef} className="mt-6 space-y-4">
+            <section className="mt-5 space-y-4">
+              {!isPromptCollapsed && task.trim() !== lastPromptRef.current ? <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">Request edited. The assessment below is from your last check. Recheck readiness to assess your changes.</p> : null}
               <ReadinessCheckPanel
-                result={readinessResult}
+                result={overriddenAssessment || readinessResult}
+                overrideRecorded={Boolean(overriddenAssessment)}
+                ticketGenerationAllowed={readinessResult.ready}
                 onApplyAnswers={({ confirmedFields, appendText }) => {
                   const trimmedAppend = appendText.trim();
                   onCheckReadiness({
@@ -1713,17 +1725,14 @@ export default function GeneratorPage() {
                 onOverride={onOverrideReadiness}
                 overriding={overridingReadiness}
                 overrideError={overrideError}
+                onRecheck={() => onCheckReadiness()}
+                onGenerateTicket={onGenerateTicket}
+                busy={ticketFlowLoading}
+                generatingTicket={generatingTicket}
+                error={isPromptCollapsed ? requestError : null}
+                loadingPanel={ticketFlowLoading ? renderLoadingPanel() : null}
               />
-              {readinessResult.ready ? (
-                <button
-                  type="button"
-                  onClick={onGenerateTicket}
-                  disabled={ticketFlowLoading}
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(37,99,235,0.24)] hover:bg-blue-700 disabled:opacity-60"
-                >
-                  {generatingTicket ? 'Generating… (can take ~20s)' : 'Generate ticket'}
-                </button>
-              ) : null}
+              {isPromptCollapsed ? <p className="text-xs leading-5 text-slate-500"><span className="font-semibold">Privacy:</span> {REQUEST_PRIVACY_DISCLOSURE}</p> : null}
             </section>
           )}
 
