@@ -16,7 +16,7 @@ export function ApplicationHeader({
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
       <a href="#configuration-content" className="sr-only rounded-lg bg-blue-600 p-3 text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-40">Skip to settings</a>
-      <div className="mx-auto flex min-h-[72px] max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex min-h-[72px] max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <Link href="/generator" aria-label="LucidSpec — create tickets" className="inline-flex items-center gap-2.5 rounded-lg text-xl font-bold tracking-tight text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600">
           <Image src="/brand/lucidspec-icon.svg" alt="" width={32} height={32} />
           <span>Lucid<span className="text-blue-600">Spec</span></span>

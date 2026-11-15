@@ -82,6 +82,11 @@ function stateButtonsFor(label: string) {
   };
 }
 
+function summaryCounts() {
+  return within(screen.getByRole('region', { name: 'Selected standard check severities' }))
+    .getAllByRole('definition').map((entry) => entry.querySelector('span')?.textContent);
+}
+
 describe('ChecklistSettingsPage', () => {
   beforeEach(() => {
     pushMock.mockReset();
@@ -123,6 +128,61 @@ describe('ChecklistSettingsPage', () => {
     await screen.findByText('Rollback');
 
     expect(stateButtonsFor('Rollback').off).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('waits for loaded settings and updates the summary and unsaved state as selections change', async () => {
+    let resolveSettings!: (value: RubricSettings) => void;
+    const pending = new Promise<RubricSettings>((resolve) => { resolveSettings = resolve; });
+    apiGetMock.mockImplementation((url: string) => url.includes('custom-rules') ? Promise.resolve({ rules: [] }) : pending);
+    const user = userEvent.setup();
+    render(<ChecklistSettingsPage />);
+    expect(screen.queryByRole('region', { name: 'Selected standard check severities' })).not.toBeInTheDocument();
+    await act(async () => resolveSettings({ ...SETTINGS, fact_settings: { rollback: 'off' } }));
+    expect(summaryCounts()).toEqual(['1', '1', '1']);
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+
+    await user.click(stateButtonsFor('Target').advisory);
+    expect(summaryCounts()).toEqual(['0', '2', '1']);
+    expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+
+    await user.click(stateButtonsFor('Target').blocking);
+    expect(summaryCounts()).toEqual(['1', '1', '1']);
+    expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(apiFetchMock).not.toHaveBeenCalled();
+  });
+
+  it('reloads the backend-confirmed values after a successful save', async () => {
+    mockSettings(SETTINGS);
+    const saved = { ...SETTINGS, fact_settings: { rollback: 'off' as const } };
+    apiFetchMock.mockResolvedValue(saved);
+    const user = userEvent.setup();
+    const page = render(<ChecklistSettingsPage />);
+    await screen.findByText('Rollback');
+    await user.click(stateButtonsFor('Rollback').off);
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await screen.findByText('Readiness standards saved.');
+    expect(summaryCounts()).toEqual(['1', '1', '1']);
+    page.unmount();
+
+    mockSettings(saved);
+    render(<ChecklistSettingsPage />);
+    await screen.findByText('Rollback');
+    expect(stateButtonsFor('Rollback').off).toHaveAttribute('aria-pressed', 'true');
+    expect(summaryCounts()).toEqual(['1', '1', '1']);
+    expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(apiFetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not show zero counts or enable saving when readiness settings fail to load', async () => {
+    apiGetMock.mockImplementation((url: string) => url.includes('custom-rules') ? Promise.resolve({ rules: [] }) : Promise.reject(new Error('Service unavailable')));
+    render(<ChecklistSettingsPage />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Readiness standards could not be loaded.');
+    expect(screen.queryByRole('region', { name: 'Selected standard check severities' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save changes' })).not.toBeInTheDocument();
+    expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
   it('clicking Off then Save sends the updated fact_settings map', async () => {

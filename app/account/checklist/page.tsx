@@ -9,7 +9,7 @@ import { toast } from '@/lib/toast';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SettingsPageHeader } from '@/components/ui/SettingsPageHeader';
 import Spinner from '@/components/Spinner';
-import { FactStateControl, SeverityGuide } from '@/components/readiness/ReadinessControls';
+import { FactStateControl, ReadinessSummary } from '@/components/readiness/ReadinessControls';
 import { ReadinessChecklist } from '@/components/readiness/ReadinessChecklist';
 import { SettingsFeedback, type SettingsFeedbackValue } from '@/components/ui/SettingsFeedback';
 import type {
@@ -375,57 +375,63 @@ export default function ChecklistSettingsPage() {
 
   return (
     <section aria-label="Readiness settings">
-    <div className="mx-auto max-w-4xl">
-      <SettingsPageHeader
-        title="Readiness Standards"
-        description="Choose which details are required, recommended, or excluded when LucidSpec checks your tickets."
-      />
+    <div className="space-y-8">
+      <header className="flex flex-col items-start justify-between gap-5 md:flex-row">
+        <SettingsPageHeader
+          title="Readiness Standards"
+          description="Define the details a ticket needs before it is ready for execution. Choose what is required, what needs review, and what to leave out."
+        />
+        <a href="#custom-rules" className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50">Go to Custom Rules ↓</a>
+      </header>
 
       {loadError ? (
-        <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800">
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800">
           <p className="font-semibold">Readiness standards could not be loaded.</p>
           <p>{loadError}</p>
-          <p className="mt-2">Refresh the page to try again.</p>
+          <p className="mt-2">Refresh the page to try again. Your saved settings have not been changed.</p>
         </div>
       ) : null}
 
       {loading ? (
-        <div className="mt-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
           <Spinner label="Loading readiness settings" />
           <span aria-hidden="true">Loading your readiness settings…</span>
         </div>
       ) : null}
 
       {!loading && settings ? (
-        <div aria-busy={saving} className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight text-slate-950">Standard checks</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-600">Set a severity for each check. Your choices apply to your account.</p>
+        <div className="space-y-6">
+          <ReadinessSummary facts={settings.facts} values={factState} />
+          <section id="standard-checks" aria-labelledby="standard-checks-title" aria-busy={saving} className="scroll-mt-28">
+            <div className="mb-4">
+              <h2 id="standard-checks-title" className="text-base font-semibold text-slate-950">Standard checks</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-500">Review each category and choose a severity. Changes apply after you save.</p>
             </div>
-            <a href="#custom-rules" className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-blue-700 hover:bg-blue-50">Go to Custom Rules ↓</a>
-          </div>
-          <SeverityGuide />
-          <div className="mt-6">
-            <ReadinessChecklist facts={settings.facts} values={factState} onChange={setStateFor} disabled={saving} />
-          </div>
+            {settings.facts.length > 0 ? (
+              <ReadinessChecklist facts={settings.facts} values={factState} onChange={setStateFor} disabled={saving} layout="workspace" />
+            ) : (
+              <EmptyState message="No standard checks are available for your account right now." />
+            )}
+          </section>
 
-          <div className="mt-4 flex flex-col items-start gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <p
-              role={saveFeedback?.kind === 'error' ? 'alert' : 'status'}
-              className={`text-sm leading-6 ${
-                saveFeedback?.kind === 'error' ? 'text-red-800' :
-                saveFeedback?.kind === 'success' ? 'text-emerald-800' :
-                hasChanges ? 'text-amber-800' : 'text-slate-600'
-              }`}
-            >
-              {saving ? 'Saving your readiness standards…' : saveFeedback?.message || (hasChanges ? 'You have unsaved changes.' : 'Changes apply after you save.')}
-            </p>
+          <div className="z-20 flex flex-col items-stretch justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.25)] sm:sticky sm:bottom-4 sm:flex-row sm:items-center sm:px-5">
+            <div className="min-w-0">
+              {hasChanges ? <p className="mb-1 flex items-center gap-2 text-xs font-semibold text-amber-800"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-amber-500" />Unsaved changes</p> : null}
+              <p
+                role={saveFeedback?.kind === 'error' ? 'alert' : 'status'}
+                className={`text-sm leading-6 ${
+                  saveFeedback?.kind === 'error' ? 'text-red-800' :
+                  saveFeedback?.kind === 'success' ? 'text-emerald-800' : 'text-slate-600'
+                }`}
+              >
+                {saving ? 'Saving your readiness standards…' : saveFeedback?.message || (hasChanges ? 'You have unsaved changes.' : 'Changes apply after you save.')}
+              </p>
+            </div>
             <button
               type="button"
               onClick={onSave}
-              disabled={saving}
-              className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+              disabled={saving || !hasChanges}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 disabled:shadow-none"
             >
               {saving ? 'Saving…' : 'Save changes'}
             </button>
@@ -434,12 +440,15 @@ export default function ChecklistSettingsPage() {
       ) : null}
 
       {!loading ? (
-        <section id="custom-rules" aria-labelledby="custom-rules-title" className="mt-8 scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <section id="custom-rules" aria-labelledby="custom-rules-title" className="scroll-mt-28 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
             <div>
-              <h2 id="custom-rules-title" className="text-lg font-semibold tracking-tight text-slate-950">Custom rules</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 id="custom-rules-title" className="text-lg font-semibold tracking-tight text-slate-950">Custom Rules</h2>
+                {!rulesLoadError ? <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">{rules.length} {rules.length === 1 ? 'rule' : 'rules'}</span> : null}
+              </div>
               <p className="mt-1 text-sm text-slate-600">
-                Add checks for requirements specific to your tickets. Set their severity, try them on an example, and pause them whenever needed.
+                Add checks for details specific to your tickets. Custom rules are saved separately from the standard checks above.
               </p>
             </div>
             {!showRuleForm ? (
@@ -489,8 +498,8 @@ export default function ChecklistSettingsPage() {
                   </span>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white ${
-                        rule.severity === 'blocking' ? 'bg-red-700' : 'bg-amber-700'
+                      className={`rounded-md border bg-white px-2 py-1 text-xs font-medium capitalize ${
+                        rule.severity === 'blocking' ? 'border-rose-200 text-rose-800' : 'border-amber-200 text-amber-800'
                       }`}
                     >
                       {rule.severity}

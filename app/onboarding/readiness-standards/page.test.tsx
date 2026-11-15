@@ -107,19 +107,41 @@ describe('ReadinessStandardsOnboardingPage', () => {
     expect(toastMock.success).toHaveBeenCalledWith('Readiness standards saved');
   });
 
-  it('a failed save does not block onboarding -- Continue still moves on', async () => {
-    apiFetchMock.mockRejectedValue(new Error('network error'));
+  it('stays on the current step after a failed save and preserves selections for retry', async () => {
+    apiFetchMock.mockRejectedValueOnce(new Error('network error'));
+    apiFetchMock.mockResolvedValueOnce({ ...SETTINGS, fact_settings: { client_tag: 'off' } });
     const user = userEvent.setup();
 
     render(<ReadinessStandardsOnboardingPage />);
     await screen.findByText('Target');
-
+    await user.click(factButtons('Client / industry tag').off);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => expect(toastMock.error).toHaveBeenCalled());
     expect(toastMock.error).toHaveBeenCalledWith(expect.stringContaining('Your changes were not saved.'), { durationMs: 8000 });
     expect(toastMock.success).not.toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Your changes were not saved.');
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(factButtons('Client / industry tag').off).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(toastMock.success).toHaveBeenCalledTimes(1));
     expect(pushMock).toHaveBeenCalledWith('/onboarding/connect-tracker?next=%2Fgenerator');
+    expect(apiFetchMock).toHaveBeenCalledTimes(2);
+    expect(apiFetchMock).toHaveBeenLastCalledWith('/api/account/rubric-settings', expect.objectContaining({ body: { fact_settings: { target: 'blocking', validation: 'blocking', client_tag: 'off' } } }));
+  });
+
+  it('continues after a failed save only when the user explicitly chooses to skip', async () => {
+    apiFetchMock.mockRejectedValue(new Error('network error'));
+    const user = userEvent.setup();
+    render(<ReadinessStandardsOnboardingPage />);
+    await screen.findByText('Target');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await screen.findByRole('alert');
+    expect(pushMock).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Skip for now' }));
+    expect(pushMock).toHaveBeenCalledWith('/onboarding/connect-tracker?next=%2Fgenerator');
+    expect(apiFetchMock).toHaveBeenCalledTimes(1);
+    expect(toastMock.success).not.toHaveBeenCalled();
   });
 
   it('Skip for now moves on without saving anything', async () => {

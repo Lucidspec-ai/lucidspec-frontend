@@ -26,6 +26,7 @@ export default function ReadinessStandardsOnboardingPage() {
   const [settings, setSettings] = useState<RubricSettings | null>(null);
   const [factState, setFactState] = useState<Record<string, RubricFactState>>({});
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -65,6 +66,7 @@ export default function ReadinessStandardsOnboardingPage() {
   }, []);
 
   const setStateFor = (key: string, value: RubricFactState) => {
+    setSaveError('');
     setFactState((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -86,6 +88,7 @@ export default function ReadinessStandardsOnboardingPage() {
       return;
     }
     setSaving(true);
+    setSaveError('');
     try {
       await apiFetch('/api/account/rubric-settings', {
         method: 'PUT',
@@ -94,17 +97,14 @@ export default function ReadinessStandardsOnboardingPage() {
         timeoutMs: 15000,
       });
       toast.success('Readiness standards saved');
+      goToConnectTracker();
     } catch (e: any) {
-      // Non-blocking: the built-in defaults already apply even if this save
-      // fails, so a failure here should never stop onboarding.
-      toast.error(
-        `Your changes were not saved. Continuing with your existing settings; you can try again from account settings. ${String(e?.message || '')}`.trim(),
-        { durationMs: 8000 }
-      );
+      const message = `Your changes were not saved. ${String(e?.message || 'Please try again.')} Try saving again, or choose Skip for now to continue without saving.`;
+      setSaveError(message);
+      toast.error(message, { durationMs: 8000 });
     } finally {
       setSaving(false);
     }
-    goToConnectTracker();
   };
 
   const onSkip = () => {
@@ -145,6 +145,7 @@ export default function ReadinessStandardsOnboardingPage() {
         ) : null}
 
         <div className="mt-6 flex flex-col items-center gap-3 border-t border-slate-200 pt-6">
+          {saveError ? <p role="alert" className="w-full rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800">{saveError}</p> : null}
           <button
             type="button"
             onClick={onContinue}
