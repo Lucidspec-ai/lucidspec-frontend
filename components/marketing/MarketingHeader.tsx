@@ -7,6 +7,7 @@ import Link from 'next/link';
 const LINKS = [
   { label: 'How It Works', href: '/#how-it-works' },
   { label: 'Integrations', href: '/integrations' },
+  { label: 'Features', href: '/features' },
   { label: 'Security', href: '/security' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'About', href: '/founder' },

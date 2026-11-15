@@ -25,6 +25,7 @@ import AccountLayout from '@/app/account/layout';
 import FounderStoryPage from '@/app/founder/page';
 import IntegrationsPage from '@/app/integrations/page';
 import SecurityPage from '@/app/security/page';
+import FeaturesPage from '@/app/features/page';
 
 describe('configuration page navigation', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -42,7 +43,7 @@ describe('configuration page navigation', () => {
     }
   );
 
-  it.each(['/signin', '/signup', '/features', '/accounting', '/onboarding-guide'])(
+  it.each(['/signin', '/signup', '/accounting', '/onboarding-guide'])(
     'preserves public navigation and footer on %s', async (pathname) => {
       mocks.pathname = pathname;
       render(<><Navbar /><Footer /></>);
@@ -90,6 +91,7 @@ describe('configuration page navigation', () => {
     { pathname: '/founder', Page: FounderStoryPage, activeLink: 'About', target: '#founder-content' },
     { pathname: '/integrations', Page: IntegrationsPage, activeLink: 'Integrations', target: '#integrations-content' },
     { pathname: '/security', Page: SecurityPage, activeLink: 'Security', target: '#security-content' },
+    { pathname: '/features', Page: FeaturesPage, activeLink: 'Features', target: '#features-content' },
   ])('reuses homepage navigation and a single footer on $pathname', async ({ pathname, Page, activeLink, target }) => {
     mocks.pathname = pathname;
     render(<><Navbar /><Page /><Footer /></>);
