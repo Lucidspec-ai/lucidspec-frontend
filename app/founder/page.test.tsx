@@ -29,12 +29,12 @@ describe('Founder Story page', () => {
     expect(screen.queryByText(/change-safety gate that runs in Slack|No self-serve signup|Every flag comes with a verified quote/)).not.toBeInTheDocument();
   });
 
-  it('shows the founder-approved quote and text-only program membership without endorsement claims', () => {
+  it('shows the founder-approved quote and official member badge without endorsement claims', () => {
     render(<FounderStoryPage />);
     expect(screen.getByRole('blockquote')).toHaveTextContent('A completed ticket doesn’t always mean the work is ready. LucidSpec is about finding the gaps earlier, while there’s still time to clarify them.');
     const membership = screen.getByRole('region', { name: 'NVIDIA Inception Program' });
     expect(within(membership).getByText('LucidSpec LLC is a member of the NVIDIA Inception Program.')).toBeInTheDocument();
-    expect(within(membership).queryByRole('img')).not.toBeInTheDocument();
+    expect(within(membership).getByRole('img', { name: 'NVIDIA Inception Program member badge' })).toHaveAttribute('src', '/images/nvidia-inception-program-badge.svg');
     expect(within(membership).queryByText(/endorsed|investment|partnership/i)).not.toBeInTheDocument();
   });
 

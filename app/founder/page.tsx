@@ -60,23 +60,23 @@ export default function FounderStoryPage() {
   return (
     <div id="founder-content" tabIndex={-1} className="bg-white text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 [&_a]:focus-visible:outline [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-blue-600">
       <section aria-labelledby="founder-title" className="border-b border-slate-100 bg-[linear-gradient(110deg,#ffffff_5%,#f3f7ff_100%)]">
-        <div className="mx-auto grid max-w-[1408px] items-start gap-8 px-5 pb-10 pt-8 sm:px-8 sm:pt-10 lg:grid-cols-[1.2fr_1fr] lg:gap-12 lg:pb-0">
+        <div className="mx-auto grid max-w-[1408px] items-center gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[1.2fr_1fr] lg:gap-12">
           <div className="min-w-0 lg:pb-12">
             <p className="inline-flex rounded-full bg-blue-100/80 px-3 py-1.5 text-xs font-semibold text-blue-700">Founder Story</p>
             <h1 id="founder-title" className="mt-5 max-w-3xl text-[34px] font-bold leading-[1.09] tracking-[-0.04em] text-slate-950 sm:text-[42px] xl:text-[48px]">I built LucidSpec because too much engineering work starts without enough clarity.</h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">After years of managing complex technology programs, I kept seeing the same problem: critical context was lost before execution began.</p>
           </div>
-          <figure aria-label="LucidSpec founder" className="relative mx-auto w-full max-w-xl overflow-hidden rounded-[28px] border border-slate-200/60 bg-blue-50 lg:self-end lg:rounded-b-none lg:rounded-t-[48px]">
+          <figure aria-label="LucidSpec founder" className="mx-auto w-full max-w-[320px] overflow-hidden rounded-[28px] border border-slate-200/60 bg-white shadow-sm">
             <Image
               src="/images/FounderPic.png"
               alt="Lavanya Nallamshetty, founder of LucidSpec"
-              width={1197}
-              height={1798}
+              width={1196}
+              height={1790}
               priority
-              sizes="(max-width: 640px) calc(100vw - 40px), (max-width: 1023px) 576px, 600px"
-              className="aspect-[5/4] w-full object-cover object-[50%_10%] sm:aspect-[4/3] lg:aspect-[3/2] lg:min-h-[380px] lg:object-[50%_5%]"
+              sizes="(max-width: 360px) calc(100vw - 40px), 320px"
+              className="h-auto w-full"
             />
-            <figcaption className="absolute bottom-4 right-4 max-w-[calc(100%-32px)] rounded-2xl border border-white/80 bg-white/95 px-5 py-3 shadow-[0_6px_24px_rgba(15,23,42,0.08)] sm:bottom-6 sm:right-6">
+            <figcaption className="border-t border-slate-100 px-5 py-4">
               <p className="text-base font-semibold tracking-tight text-slate-950 sm:text-lg">Lavanya Nallamshetty</p>
               <p className="mt-1 text-xs text-slate-600 sm:text-sm">Founder, LucidSpec</p>
             </figcaption>
@@ -104,9 +104,17 @@ export default function FounderStoryPage() {
             <blockquote className="mt-4 text-xl font-medium italic leading-8 tracking-tight text-slate-950 lg:text-2xl lg:leading-9">“A completed ticket doesn’t always mean the work is ready. LucidSpec is about finding the gaps earlier, while there’s still time to clarify them.”</blockquote>
             <figcaption className="mt-5 text-xs font-medium text-slate-600">Lavanya Nallamshetty · Founder, LucidSpec</figcaption>
           </figure>
-          <section aria-labelledby="membership-title" className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 lg:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Program membership</p>
-            <h2 id="membership-title" className="mt-3 text-xl font-semibold tracking-tight text-slate-950">NVIDIA Inception Program</h2>
+          <section aria-labelledby="membership-title" className="rounded-3xl border border-blue-100 bg-white p-6 sm:p-7 lg:p-8">
+            <h2 id="membership-title" className="sr-only">NVIDIA Inception Program</h2>
+            {/* Unmodified full-color screen badge supplied from the member kit.
+                Usage: https://design.nvidia.com/partners/inception/nvidia-inception-program/member-badge */}
+            <Image
+              src="/images/nvidia-inception-program-badge.svg"
+              alt="NVIDIA Inception Program member badge"
+              width={500.4288}
+              height={216}
+              className="h-auto w-32 sm:w-36"
+            />
             <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">LucidSpec LLC is a member of the NVIDIA Inception Program.</p>
           </section>
         </aside>
