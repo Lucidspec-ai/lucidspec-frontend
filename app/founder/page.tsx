@@ -68,10 +68,10 @@ export default function FounderStoryPage() {
           </div>
           <figure aria-label="LucidSpec founder" className="mx-auto w-full max-w-[320px] overflow-hidden rounded-[28px] border border-slate-200/60 bg-white shadow-sm">
             <Image
-              src="/images/FounderPic.png"
+              src="/images/founder-portrait.jpg"
               alt="Lavanya Nallamshetty, founder of LucidSpec"
-              width={1196}
-              height={1790}
+              width={2348}
+              height={2500}
               priority
               sizes="(max-width: 360px) calc(100vw - 40px), 320px"
               className="h-auto w-full"
@@ -104,7 +104,7 @@ export default function FounderStoryPage() {
             <blockquote className="mt-4 text-xl font-medium italic leading-8 tracking-tight text-slate-950 lg:text-2xl lg:leading-9">“A completed ticket doesn’t always mean the work is ready. LucidSpec is about finding the gaps earlier, while there’s still time to clarify them.”</blockquote>
             <figcaption className="mt-5 text-xs font-medium text-slate-600">Lavanya Nallamshetty · Founder, LucidSpec</figcaption>
           </figure>
-          <section aria-labelledby="membership-title" className="rounded-3xl border border-blue-100 bg-white p-6 sm:p-7 lg:p-8">
+          <section aria-labelledby="membership-title" className="rounded-3xl border border-blue-200 bg-white p-6 text-center shadow-[0_4px_20px_rgba(37,99,235,0.04)] sm:p-7 lg:p-8">
             <h2 id="membership-title" className="sr-only">NVIDIA Inception Program</h2>
             {/* Unmodified full-color screen badge supplied from the member kit.
                 Usage: https://design.nvidia.com/partners/inception/nvidia-inception-program/member-badge */}
@@ -113,9 +113,9 @@ export default function FounderStoryPage() {
               alt="NVIDIA Inception Program member badge"
               width={500.4288}
               height={216}
-              className="h-auto w-32 sm:w-36"
+              className="mx-auto h-auto w-32 sm:w-36"
             />
-            <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">LucidSpec LLC is a member of the NVIDIA Inception Program.</p>
+            <p className="mx-auto mt-4 max-w-sm text-sm font-medium leading-7 text-slate-700 sm:text-base">LucidSpec LLC is a member of the NVIDIA Inception Program.</p>
           </section>
         </aside>
       </section>

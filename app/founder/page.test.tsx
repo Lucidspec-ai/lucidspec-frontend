@@ -6,10 +6,10 @@ import { describe, expect, it } from 'vitest';
 import FounderStoryPage, { metadata } from './page';
 
 describe('Founder Story page', () => {
-  it('uses the existing authentic photograph and the approved full founder name and title', () => {
+  it('uses the supplied founder photograph and the approved full founder name and title', () => {
     render(<FounderStoryPage />);
     const portrait = screen.getByRole('img', { name: 'Lavanya Nallamshetty, founder of LucidSpec' });
-    expect(decodeURIComponent(portrait.getAttribute('src') || '')).toContain('/images/FounderPic.png');
+    expect(decodeURIComponent(portrait.getAttribute('src') || '')).toContain('/images/founder-portrait.jpg');
     const caption = screen.getByRole('figure', { name: 'LucidSpec founder' });
     expect(within(caption).getByText('Lavanya Nallamshetty')).toBeInTheDocument();
     expect(within(caption).getByText('Founder, LucidSpec')).toBeInTheDocument();
