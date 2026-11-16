@@ -124,7 +124,7 @@ export default function AccountPage() {
             <button type="button" onClick={openPortal} disabled={busy} className={`${ROW_CLASSES} disabled:opacity-60`}>
               <SettingsRowContent
                 title="Manage billing"
-                description="On the free beta plan right now — no payment method on file"
+                description="Manage your subscription and payment details where billing is configured."
               />
               {busy ? <span className="shrink-0 text-sm font-semibold text-slate-500">Opening…</span> : <RowChevron />}
             </button>

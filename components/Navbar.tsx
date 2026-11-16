@@ -72,8 +72,8 @@ export default function Navbar() {
     return <ApplicationHeader readiness={pathname === '/account/checklist'} signedIn={Boolean(session)} userEmail={session?.user?.email} onSignOut={handleSignOut} onSignIn={handleSignIn} />;
   }
 
-  if (isHome || pathname === '/founder' || pathname === '/integrations' || pathname === '/security' || pathname === '/features') {
-    return <MarketingHeader signedIn={Boolean(session)} onSignIn={handleSignIn} onSignOut={handleSignOut} adminLink={<AdminLink key={uid} />} contentId={pathname === '/founder' ? 'founder-content' : pathname === '/integrations' ? 'integrations-content' : pathname === '/security' ? 'security-content' : pathname === '/features' ? 'features-content' : 'homepage-content'} currentPath={pathname} />;
+  if (isHome || pathname === '/founder' || pathname === '/integrations' || pathname === '/security' || pathname === '/features' || pathname === '/pricing') {
+    return <MarketingHeader signedIn={Boolean(session)} onSignIn={handleSignIn} onSignOut={handleSignOut} adminLink={<AdminLink key={uid} />} contentId={pathname === '/founder' ? 'founder-content' : pathname === '/integrations' ? 'integrations-content' : pathname === '/security' ? 'security-content' : pathname === '/features' ? 'features-content' : pathname === '/pricing' ? 'pricing-content' : 'homepage-content'} currentPath={pathname} />;
   }
 
   const navLinks = [

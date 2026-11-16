@@ -26,6 +26,7 @@ import FounderStoryPage from '@/app/founder/page';
 import IntegrationsPage from '@/app/integrations/page';
 import SecurityPage from '@/app/security/page';
 import FeaturesPage from '@/app/features/page';
+import PricingPage from '@/app/pricing/page';
 
 describe('configuration page navigation', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -92,6 +93,7 @@ describe('configuration page navigation', () => {
     { pathname: '/integrations', Page: IntegrationsPage, activeLink: 'Integrations', target: '#integrations-content' },
     { pathname: '/security', Page: SecurityPage, activeLink: 'Security', target: '#security-content' },
     { pathname: '/features', Page: FeaturesPage, activeLink: 'Features', target: '#features-content' },
+    { pathname: '/pricing', Page: PricingPage, activeLink: 'Pricing', target: '#pricing-content' },
   ])('reuses homepage navigation and a single footer on $pathname', async ({ pathname, Page, activeLink, target }) => {
     mocks.pathname = pathname;
     render(<><Navbar /><Page /><Footer /></>);
